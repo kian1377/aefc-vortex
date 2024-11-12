@@ -1,0 +1,9 @@
+
+# Ignore .ipynb_checkpoints
+*.ipynb_checkpoints/
+*__pycache__/
+*.vscode/
+
+*.egg-info
+
+
