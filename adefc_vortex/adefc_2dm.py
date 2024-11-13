@@ -32,22 +32,22 @@ def run(I,
     del_dm2 = xp.zeros((M.Nact,M.Nact))
     del_acts0 = np.zeros(M.Nacts)
     for i in range(Nitr):
-        print('Running estimation algorithm ...')
-        I.subtract_dark = False
         
         if pwp_params is not None: 
+            print('Running PWP ...')
             E_ab = pwp.run(I, M, **pwp_params)
         else:
+            print('Computing E-field with model ...')
             E_ab = I.calc_wf()
         
         print('Computing EFC command with L-BFGS')
         current_acts = xp.concatenate([total_dm1[M.dm_mask], total_dm2[M.dm_mask]])
-        E_FP_nom, E_EP, E_DM2P, DM1_PHASOR, DM2_PHASOR = M.forward(current_acts, I.wavelength, use_vortex=True, return_ints=True,)
+        E_FP_NOM, E_EP, E_DM2P, DM1_PHASOR, DM2_PHASOR = M.forward(current_acts, I.wavelength, use_vortex=True, return_ints=True,)
 
         rmad_vars = { 
             'current_acts':current_acts,
             'E_ab':E_ab, 
-            'E_FP_nom':E_FP_nom,
+            'E_FP_NOM':E_FP_NOM,
             'E_EP':E_EP,
             'E_DM2P':E_DM2P,
             'DM1_PHASOR':DM1_PHASOR,
@@ -95,9 +95,6 @@ def run(I,
 
     return data
 
-def pwp_bb():
-    return
-
 def calc_wfs(I, waves, control_mask, plot=False):
     Nwaves = len(waves)
     E_abs = xp.zeros((Nwaves, I.npsf, I.npsf), dtype=xp.complex128)
@@ -124,19 +121,20 @@ def get_forward_vars(M, current_acts, est_waves):
         DM2_PHASORs.append(DM2_PHASOR)
     return xp.array(E_FP_NOMs), xp.array(E_EPs), xp.array(E_DM2Ps), xp.array(DM1_PHASORs), xp.array(DM2_PHASORs)
 
-def run_bb(I, 
-            M, 
-            val_and_grad,
-            control_mask,
-            data,
-            pwp_params=None,
-            Nitr=3, 
-            reg_cond=1e-2,
-            weights=None, 
-            bfgs_tol=1e-3,
-            bfgs_opts=None,
-            gain=0.5, 
-            ):
+def run_bb(
+        I, 
+        M, 
+        val_and_grad,
+        control_mask,
+        data,
+        pwp_params=None,
+        Nitr=3, 
+        reg_cond=1e-2,
+        weights=None, 
+        bfgs_tol=1e-3,
+        bfgs_opts=None,
+        gain=0.5, 
+    ):
     
     Nbps = I.bandpasses.shape[0]
     Nwaves_per_bp = I.bandpasses.shape[1]
@@ -144,7 +142,7 @@ def run_bb(I,
 
     starting_itr = len(data['images'])
     if len(data['dm1_commands'])>0:
-        total_dm1, total_dm2 = ( copy.copy(I.get_dm1()), copy.copy(I.get_dm2()) )
+        total_dm1, total_dm2 = ( copy.copy(data['dm1_commands'][-1]), copy.copy(data['dm2_commands'][-1]) )
     else:
         total_dm1, total_dm2 = ( xp.zeros((M.Nact,M.Nact)), xp.zeros((M.Nact,M.Nact)) ) 
 
@@ -152,21 +150,20 @@ def run_bb(I,
     del_dm2 = xp.zeros((M.Nact,M.Nact))
     del_acts0 = np.zeros(M.Nacts)
     for i in range(Nitr):
-        print('Running estimation algorithm ...')
-        I.subtract_dark = False
-        
         if pwp_params is not None: 
-            E_abs = pwp_bb(I, M, **pwp_params)
+            print('Running PWP ...')
+            E_abs = pwp.run_bb(I, M, **pwp_params)
         else:
+            print('Computing E-field with model ...')
             E_abs = calc_wfs(I, control_waves, control_mask)
         
         print('Computing EFC command with L-BFGS')
         current_acts = xp.concatenate([total_dm1[M.dm_mask], total_dm2[M.dm_mask]])
-        E_FP_noms, E_EPs, E_DM2Ps, DM1_PHASORs, DM2_PHASORs = get_forward_vars(M, current_acts, control_waves)
+        E_FP_NOMs, E_EPs, E_DM2Ps, DM1_PHASORs, DM2_PHASORs = get_forward_vars(M, current_acts, control_waves)
         rmad_vars = { 
             'current_acts':current_acts,
             'E_abs':E_abs, 
-            'E_FP_noms':E_FP_noms,
+            'E_FP_NOMs':E_FP_NOMs,
             'E_EPs':E_EPs,
             'E_DM2Ps':E_DM2Ps,
             'DM1_PHASORs':DM1_PHASORs,
@@ -192,7 +189,7 @@ def run_bb(I,
         del_dm2[M.dm_mask] = del_acts[M.Nacts//2:]
         I.add_dm1(del_dm1)
         I.add_dm2(del_dm2)
-        total_dm1, total_dm2 = ( copy.copy(I.get_dm1()), copy.copy(I.get_dm2()) )
+        total_dm1, total_dm2 = ( total_dm1 + del_dm1, total_dm2 + del_dm2 )
 
         image_ni = I.snap()
         mean_ni = xp.mean(image_ni[control_mask])

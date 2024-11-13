@@ -159,7 +159,7 @@ class CORO():
         self.DM1.command += command
         
     def get_dm1(self):
-        return self.DM1.command
+        return copy.copy(self.DM1.command)
     
     def set_dm2(self, command):
         self.DM2.command = command
@@ -168,7 +168,7 @@ class CORO():
         self.DM2.command += command
         
     def get_dm2(self):
-        return self.DM2.command
+        return copy.copy(self.DM2.command)
     
     def init_opds(self, seeds=None):
         np.random.seed(1)
@@ -176,7 +176,7 @@ class CORO():
         self.opd_index = 2.75
         self.pol_opd_index = 4.0
         # rms_wfes = np.random.randn(20)*2*u.nm + 4*u.nm
-        rms_wfes = 20*[4*u.nm]
+        rms_wfes = 20*[6*u.nm]
         seeds = np.linspace(1,20,20).astype(int)
 
         self.oap1_opd = poppy.StatisticalPSDWFE('OAP1 OPD', index=self.opd_index, wfe=rms_wfes[1], radius=self.oap_diams/2, seed=seeds[1])
@@ -268,8 +268,8 @@ class CORO():
         vpup_wf = props.ifft(fpwf)
         if self.plot_vortex: 
             imshow2(xp.abs(vpup_wf), xp.angle(vpup_wf), 'Virtual Pupil Amplitude', 'Virtual Pupil Phase',
-                            npix=1.5*self.npix,
-                            )
+                    npix=1.5*self.npix,
+                    )
 
         lres_wf = utils.pad_or_crop(vpup_wf, self.N_vortex_lres) # pad to the larger array for the low res propagation
         fp_wf_lres = props.fft(lres_wf)
@@ -278,22 +278,22 @@ class CORO():
         pupil_wf_lres = utils.pad_or_crop(pupil_wf_lres, self.N,)
         if self.plot_vortex: 
             imshow2(xp.abs(pupil_wf_lres), xp.angle(pupil_wf_lres), 'FFT Pupil Amplitude', 'FFT Pupil Phase', 
-                            npix=1.5*self.npix,
-                            )
+                    npix=1.5*self.npix,
+                    )
 
         fp_wf_hres = props.mft_forward(vpup_wf, self.npix, self.N_vortex_hres, self.hres_sampling, convention='-', fp_centering='odd')
         fp_wf_hres *= self.vortex_hres * self.hres_window * self.hres_dot_mask # apply high res (windowed) FPM
         pupil_wf_hres = props.mft_reverse(fp_wf_hres, self.hres_sampling, self.npix, self.N, convention='+', fp_centering='odd')
         if self.plot_vortex: 
             imshow2(xp.abs(pupil_wf_hres), xp.angle(pupil_wf_hres), 'MFT Pupil Amplitude', 'MFT Pupil Phase',
-                            npix=1.5*self.npix,
-                            )
+                    npix=1.5*self.npix,
+                    )
 
         post_vortex_vpup_wf = (pupil_wf_lres + pupil_wf_hres)
         if self.plot_vortex: 
             imshow2(xp.abs(post_vortex_vpup_wf), xp.angle(post_vortex_vpup_wf), 'Total Pupil Amplitude', 'Total Pupil Phase',
-                            npix=1.5*self.npix,
-                            )
+                    npix=1.5*self.npix,
+                    )
         post_vortex_fpwf = props.fft(post_vortex_vpup_wf)
 
         return post_vortex_fpwf

@@ -43,7 +43,7 @@ class MODEL():
         self.lyot_stop_diam = 0.9 * self.lyot_pupil_diam
         self.lyot_ratio = (self.lyot_stop_diam / self.lyot_pupil_diam).decompose().value
         self.control_rad = 34/2 * 9.6/10.2 * self.lyot_ratio
-        self.psf_pixelscale_lamDc = 0.354
+        self.psf_pixelscale_lamDc = 0.3544
         self.psf_pixelscale_lamD = self.psf_pixelscale_lamDc
         self.npsf = 100
 
@@ -244,7 +244,7 @@ def val_and_grad(
     
     current_acts = rmad_vars['current_acts']
     E_ab = rmad_vars['E_ab']
-    E_FP_nom = rmad_vars['E_FP_nom']
+    E_FP_NOM = rmad_vars['E_FP_NOM']
     E_EP = rmad_vars['E_EP']
     E_DM2P = rmad_vars['E_DM2P']
     DM1_PHASOR = rmad_vars['DM1_PHASOR']
@@ -257,7 +257,7 @@ def val_and_grad(
 
     # Compute E_dm using the forward DM model
     E_FP_delDMs = M.forward(current_acts+del_acts, wavelength, use_vortex=True) # make sure to do the array indexing
-    E_DMs = E_FP_delDMs - E_FP_nom
+    E_DMs = E_FP_delDMs - E_FP_NOM
 
     # compute the cost function
     delE = E_ab + E_DMs
@@ -353,7 +353,7 @@ def val_and_grad_bb(
     
     current_acts = rmad_vars['current_acts']
     E_abs = rmad_vars['E_abs']
-    E_FP_noms = rmad_vars['E_FP_noms']
+    E_FP_NOMs = rmad_vars['E_FP_NOMs']
     E_EPs = rmad_vars['E_EPs']
     E_DM2Ps = rmad_vars['E_DM2Ps']
     DM1_PHASORs = rmad_vars['DM1_PHASORs']
@@ -372,13 +372,13 @@ def val_and_grad_bb(
         'r_cond':0,
     }
     for i in range(Nwaves):
-        mono_rmad_vars.update({'E_ab':E_abs[i]})
-        mono_rmad_vars.update({'E_FP_nom':E_FP_noms[i]})
-        mono_rmad_vars.update({'E_EP':E_EPs[i]})
-        mono_rmad_vars.update({'E_DM2P':E_DM2Ps[i]})
-        mono_rmad_vars.update({'DM1_PHASOR':DM1_PHASORs[i]})
-        mono_rmad_vars.update({'DM2_PHASOR':DM2_PHASORs[i]})
-        mono_rmad_vars.update({'wavelength':control_waves[i]})
+        mono_rmad_vars.update({'E_ab':copy.copy(E_abs[i])})
+        mono_rmad_vars.update({'E_FP_NOM':copy.copy(E_FP_NOMs[i])})
+        mono_rmad_vars.update({'E_EP':copy.copy(E_EPs[i])})
+        mono_rmad_vars.update({'E_DM2P':copy.copy(E_DM2Ps[i])})
+        mono_rmad_vars.update({'DM1_PHASOR':copy.copy(DM1_PHASORs[i])})
+        mono_rmad_vars.update({'DM2_PHASOR':copy.copy(DM2_PHASORs[i])})
+        mono_rmad_vars.update({'wavelength':copy.copy(control_waves[i])})
 
         J_mono, dJ_dA_mono = val_and_grad(del_acts, M, mono_rmad_vars, verbose=verbose, plot=plot, fancy_plot=fancy_plot)
 
