@@ -16,6 +16,7 @@ def run(I,
         M, 
         control_mask, 
         probes, probe_amp, 
+        wavelength, 
         reg_cond=1e-3, 
         Ndms=1,
         plot=False,
@@ -54,8 +55,12 @@ def run(I,
     diff_ims = xp.zeros((probes.shape[0], I.npsf, I.npsf))
     for i in range(Nprobes):
         if i==0: 
-            E_nom = M.forward(current_acts, use_vortex=True)
-        E_with_probe = M.forward(xp.array(current_acts) + xp.array(probe_amp*probes[i])[M.dm_mask], use_vortex=True)
+            E_nom = M.forward(current_acts, wavelength, use_vortex=True)
+        if Ndms==1:
+            probe_acts = xp.array(probe_amp*probes[i])[M.dm_mask]
+        else: 
+            probe_acts = xp.concatenate([probe_amp*probes[i][M.dm_mask], xp.zeros(M.Nacts//2)])
+        E_with_probe = M.forward(current_acts + probe_acts, wavelength, use_vortex=True)
 
         E_probes[i] = E_with_probe - E_nom
         diff_ims[i] = Ip[i] - In[i]

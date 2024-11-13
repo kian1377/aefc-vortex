@@ -36,7 +36,7 @@ def run(I,
         I.subtract_dark = False
         
         if pwp_params is not None: 
-            E_ab = pwp(I, M, ensure_np_array(total_dm1[M.dm_mask]), ensure_np_array(total_dm2[M.dm_mask]), **pwp_params)
+            E_ab = pwp.run(I, M, **pwp_params)
         else:
             E_ab = I.calc_wf()
         
@@ -57,14 +57,15 @@ def run(I,
             'r_cond':reg_cond,
         }
 
-        res = minimize(val_and_grad, 
-                       jac=True, 
-                       x0=del_acts0,
-                       args=(M, rmad_vars), 
-                       method='L-BFGS-B',
-                       tol=bfgs_tol,
-                       options=bfgs_opts,
-                       )
+        res = minimize(
+            val_and_grad, 
+            jac=True, 
+            x0=del_acts0,
+            args=(M, rmad_vars), 
+            method='L-BFGS-B',
+            tol=bfgs_tol,
+            options=bfgs_opts,
+        )
 
         del_acts = gain * res.x
         del_dm1[M.dm_mask] = del_acts[:M.Nacts//2]
@@ -109,33 +110,33 @@ def calc_wfs(I, waves, control_mask, plot=False):
 
 def get_forward_vars(M, current_acts, est_waves):
     Nwaves = est_waves.shape[0]
-    E_FP_noms = []
+    E_FP_NOMs = []
     E_EPs = []
     E_DM2Ps = []
     DM1_PHASORs = []
     DM2_PHASORs = []
     for i in range(Nwaves):
-        E_FP_nom, E_EP, E_DM2P, DM1_PHASOR, DM2_PHASOR = M.forward(current_acts, est_waves[i], use_vortex=True, return_ints=True,)
-        E_FP_noms.append(E_FP_nom)
+        E_FP_NOM, E_EP, E_DM2P, DM1_PHASOR, DM2_PHASOR = M.forward(current_acts, est_waves[i], use_vortex=True, return_ints=True,)
+        E_FP_NOMs.append(E_FP_NOM)
         E_EPs.append(E_EP)
         E_DM2Ps.append(E_DM2P)
         DM1_PHASORs.append(DM1_PHASOR)
         DM2_PHASORs.append(DM2_PHASOR)
-    return xp.array(E_FP_noms), xp.array(E_EPs), xp.array(E_DM2Ps), xp.array(DM1_PHASORs), xp.array(DM2_PHASORs)
+    return xp.array(E_FP_NOMs), xp.array(E_EPs), xp.array(E_DM2Ps), xp.array(DM1_PHASORs), xp.array(DM2_PHASORs)
 
 def run_bb(I, 
-        M, 
-        val_and_grad,
-        control_mask,
-        # bandpasses,
-        data,
-        pwp_params=None,
-        Nitr=3, 
-        reg_cond=1e-2,
-        bfgs_tol=1e-3,
-        bfgs_opts=None,
-        gain=0.5, 
-        ):
+            M, 
+            val_and_grad,
+            control_mask,
+            data,
+            pwp_params=None,
+            Nitr=3, 
+            reg_cond=1e-2,
+            weights=None, 
+            bfgs_tol=1e-3,
+            bfgs_opts=None,
+            gain=0.5, 
+            ):
     
     Nbps = I.bandpasses.shape[0]
     Nwaves_per_bp = I.bandpasses.shape[1]
@@ -155,7 +156,7 @@ def run_bb(I,
         I.subtract_dark = False
         
         if pwp_params is not None: 
-            E_abs = pwp_bb(I, M, ensure_np_array(total_dm1[M.dm_mask]), ensure_np_array(total_dm2[M.dm_mask]), **pwp_params)
+            E_abs = pwp_bb(I, M, **pwp_params)
         else:
             E_abs = calc_wfs(I, control_waves, control_mask)
         
@@ -173,15 +174,18 @@ def run_bb(I,
             'control_mask':control_mask,
             'control_waves':control_waves,
             'r_cond':reg_cond,
+            'weights':weights,
         }
-        res = minimize(val_and_grad, 
-                       jac=True, 
-                       x0=del_acts0,
-                       args=(M, rmad_vars), 
-                       method='L-BFGS-B',
-                       tol=bfgs_tol,
-                       options=bfgs_opts,
-                       )
+
+        res = minimize(
+            val_and_grad, 
+            jac=True, 
+            x0=del_acts0,
+            args=(M, rmad_vars), 
+            method='L-BFGS-B',
+            tol=bfgs_tol,
+            options=bfgs_opts,
+        )
 
         del_acts = gain * res.x
         del_dm1[M.dm_mask] = del_acts[:M.Nacts//2]

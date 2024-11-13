@@ -267,8 +267,9 @@ def create_hadamard_modes(dm_mask):
     return had_modes
     
 def create_fourier_modes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, 
+                         edge=None,
                          rotation=0, 
-                         fourier_sampling=0.75,
+                         fourier_sampling=0.75, 
                          which='both', 
                          return_fs=False,
                          plot=False,
@@ -277,7 +278,8 @@ def create_fourier_modes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa,
     nfg = int(xp.round(npsf * psf_pixelscale_lamD/fourier_sampling))
     if nfg%2==1: nfg += 1
     yf, xf = (xp.indices((nfg, nfg)) - nfg//2 + 1/2) * fourier_sampling
-    fourier_cm = create_annular_focal_plane_mask(nfg, fourier_sampling, iwa-fourier_sampling, owa+fourier_sampling, edge=iwa-fourier_sampling, rotation=rotation)
+    fourier_cm = create_annular_focal_plane_mask(nfg, fourier_sampling, iwa-fourier_sampling, owa+fourier_sampling, 
+                                                 edge=edge, rotation=rotation)
     ypp, xpp = (xp.indices((Nact, Nact)) - Nact//2 + 1/2)
 
     sampled_fs = xp.array([xf[fourier_cm], yf[fourier_cm]]).T
@@ -298,6 +300,7 @@ def create_fourier_modes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa,
         return xp.array(fourier_modes)
 
 def create_fourier_probes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, 
+                          edge=None, 
                           rotation=0, 
                           fourier_sampling=0.75, 
                           shifts=None, nprobes=2,
@@ -305,15 +308,17 @@ def create_fourier_probes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa,
                           plot=False,
                           ): 
     Nact = dm_mask.shape[0]
-    cos_modes, fs = create_fourier_modes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, rotation,
-                                        fourier_sampling=fourier_sampling, 
-                                        return_fs=True,
-                                        which='cos',
-                                        )
-    sin_modes = create_fourier_modes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, rotation,
-                                    fourier_sampling=fourier_sampling, 
-                                    which='sin',
-                                    )
+    cos_modes, fs = create_fourier_modes(
+        dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, rotation,
+        fourier_sampling=fourier_sampling, 
+        return_fs=True,
+        which='cos',
+    )
+    sin_modes = create_fourier_modes(
+        dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, rotation,
+        fourier_sampling=fourier_sampling, 
+        which='sin',
+    )
     nfs = fs.shape[0]
 
     probes = xp.zeros((nprobes, Nact, Nact))

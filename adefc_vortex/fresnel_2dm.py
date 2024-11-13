@@ -30,12 +30,11 @@ class CORO():
                  dm1_ref=xp.zeros((34,34)),
                  dm2_ref=xp.zeros((34,34)),
                  d_dm1_dm2=283.569*u.mm, 
-                 WFE=None,
                  use_opds=False,
                  use_aps=False,
                 ):
         
-        self.wavelength_c = 633e-9
+        self.wavelength_c = 650e-9
         self.wavelength = self.wavelength_c
         self.bandpasses = np.array([self.wavelength_c])
 
@@ -86,16 +85,6 @@ class CORO():
         self.um_per_lamD = (self.wavelength_c*u.m * self.fl_oap9/(self.lyot_diam)).to(u.um)
         self.psf_pixelscale_lamDc = self.psf_pixelscale.to_value(u.um/u.pix)/self.um_per_lamD.value
 
-        # APERTURE = xp.array(fits.getdata(data_path/'aperture_gray_1000.fits'))
-        # self.APMASK = APERTURE>0
-        # LYOT = xp.array(fits.getdata(data_path/'lyot_90_gray_1000.fits'))
-        
-        # self.APERTURE = poppy.ArrayOpticalElement(transmission=APERTURE, 
-        #                                           pixelscale=self.pupil_diam/(self.npix*u.pix),
-        #                                           name='Pupil')
-        # self.LYOT = poppy.ArrayOpticalElement(transmission=LYOT, 
-        #                                       pixelscale=self.lyot_pupil_diam/(self.npix*u.pix),
-        #                                       name='Lyot Stop (Pupil)')
         pwf = poppy.FresnelWavefront(beam_radius=self.pupil_diam/2, npix=self.npix, oversample=1) # pupil wavefront
         self.APERTURE = poppy.CircularAperture(radius=self.pupil_diam/2)
         self.GAP_MASK = self.APERTURE.get_transmission(pwf)
@@ -353,6 +342,7 @@ class CORO():
             # print(waves[i])
             fpwf = self.calc_wf()
             im += xp.abs( fpwf )**2 / Nwaves
+
         return im
     
     def calc_pupil(self):
@@ -362,10 +352,12 @@ class CORO():
         ep_inwave = self.init_inwave()
         _, pupil_wf = fosys_to_pupil.calc_psf(inwave=ep_inwave, normalize='none', return_final=True)
         pupil = utils.pad_or_crop(pupil_wf[-1].wavefront, self.npix)
-        # print(pupil_wf[0].wavelength)
+        
         amp = xp.abs(pupil) * self.GAP_MASK
         phs = xp.angle(pupil) * self.GAP_MASK
         opd = phs * self.wavelength_c / (2*xp.pi)
         return amp, opd
+
+
     
         

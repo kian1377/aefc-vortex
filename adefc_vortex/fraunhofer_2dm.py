@@ -34,7 +34,7 @@ class MODEL():
     def __init__(self):
 
         # initialize physical parameters
-        self.wavelength_c = 633e-9
+        self.wavelength_c = 650e-9
 
         self.dm_beam_diam = 9.6*u.mm
         self.d_dm1_dm2 = 283.569*u.mm
@@ -198,32 +198,32 @@ class MODEL():
     def setattr(self, attr, val):
         setattr(self, attr, val)
         
-    def zero_dms(self):
-        self.dm1_command = xp.zeros((self.Nact,self.Nact))
-        self.dm2_command = xp.zeros((self.Nact,self.Nact))
+    # def zero_dms(self):
+    #     self.dm1_command = xp.zeros((self.Nact,self.Nact))
+    #     self.dm2_command = xp.zeros((self.Nact,self.Nact))
 
-    def add_dm1(self, del_dm):
-        self.dm1_command += del_dm
+    # def add_dm1(self, del_dm):
+    #     self.dm1_command += del_dm
     
-    def set_dm1(self, dm_command):
-        self.dm1_command = dm_command
+    # def set_dm1(self, dm_command):
+    #     self.dm1_command = dm_command
 
-    def get_dm1(self,):
-        return copy.copy(self.dm1_command)
+    # def get_dm1(self,):
+    #     return copy.copy(self.dm1_command)
 
-    def add_dm2(self, del_dm):
-        self.dm2_command += del_dm
+    # def add_dm2(self, del_dm):
+    #     self.dm2_command += del_dm
     
-    def set_dm2(self, dm_command):
-        self.dm2_command = dm_command
+    # def set_dm2(self, dm_command):
+    #     self.dm2_command = dm_command
 
-    def get_dm2(self,):
-        return copy.copy(self.dm2_command)
+    # def get_dm2(self,):
+    #     return copy.copy(self.dm2_command)
         
-    def calc_wf(self, wavelength=650e-9):
-        actuators = xp.concatenate([self.dm1_command[self.dm_mask], self.dm2_command[self.dm_mask]])
-        fpwf = self.forward(actuators, wavelength, use_vortex=self.use_vortex, )
-        return fpwf
+    # def calc_wf(self, wavelength=650e-9):
+    #     actuators = xp.concatenate([self.dm1_command[self.dm_mask], self.dm2_command[self.dm_mask]])
+    #     fpwf = self.forward(actuators, wavelength, use_vortex=self.use_vortex, )
+    #     return fpwf
         
     # def snap(self):
     #     actuators = xp.concatenate([self.dm1_command[self.dm_mask], self.dm2_command[self.dm_mask]])
@@ -302,17 +302,17 @@ def val_and_grad(
     dJ_dE_PUP = dJ_dE_PUP_fft + dJ_dE_PUP_mft
     if plot: imshow2(xp.abs(dJ_dE_PUP), xp.angle(dJ_dE_PUP), 'RMAD Total Pupil', npix=1.5*M.npix)
 
-    dJ_dE_DM2 = props.ang_spec(dJ_dE_PUP, M.wavelength*u.m, M.d_dm1_dm2, M.dm_pxscl)
+    dJ_dE_DM2 = props.ang_spec(dJ_dE_PUP, wavelength*u.m, M.d_dm1_dm2, M.dm_pxscl)
     if plot: imshow2(xp.abs(dJ_dE_DM2), xp.angle(dJ_dE_DM2), 'RMAD DM2 WF', npix=1.5*M.npix)
 
     dJ_dE_DM2P = dJ_dE_DM2 * DM2_PHASOR.conj()
     if plot: imshow2(xp.abs(dJ_dE_DM2P), xp.angle(dJ_dE_DM2P), 'RMAD DM2 Plane WF', npix=1.5*M.npix)
 
-    dJ_dE_DM1 = props.ang_spec(dJ_dE_DM2P, M.wavelength*u.m, -M.d_dm1_dm2, M.dm_pxscl)
+    dJ_dE_DM1 = props.ang_spec(dJ_dE_DM2P, wavelength*u.m, -M.d_dm1_dm2, M.dm_pxscl)
     if plot: imshow2(xp.abs(dJ_dE_DM1), xp.angle(dJ_dE_DM1), 'RMAD DM1 WF', npix=1.5*M.npix)
 
-    dJ_dS_DM2 = 4*xp.pi/M.wavelength * xp.imag(dJ_dE_DM2 * E_DM2P.conj() * DM2_PHASOR.conj())
-    dJ_dS_DM1 = 4*xp.pi/M.wavelength * xp.imag(dJ_dE_DM1 * E_EP.conj() * DM1_PHASOR.conj())
+    dJ_dS_DM2 = 4*xp.pi/wavelength * xp.imag(dJ_dE_DM2 * E_DM2P.conj() * DM2_PHASOR.conj())
+    dJ_dS_DM1 = 4*xp.pi/wavelength * xp.imag(dJ_dE_DM1 * E_EP.conj() * DM1_PHASOR.conj())
     if M.flip_dm: 
         dJ_dS_DM1 = xp.rot90(xp.rot90(dJ_dS_DM1))
         dJ_dS_DM2 = xp.rot90(xp.rot90(dJ_dS_DM2))
@@ -361,6 +361,7 @@ def val_and_grad_bb(
     control_waves = rmad_vars['control_waves']
     control_mask = rmad_vars['control_mask']
     r_cond = rmad_vars['r_cond']
+    weights = rmad_vars['weights']
 
     Nwaves = len(control_waves)
     mono_Js = np.zeros(Nwaves)
@@ -386,13 +387,13 @@ def val_and_grad_bb(
 
     # imshow1(acts_to_command(dJ_dA_monos[2] - dJ_dA_monos[0], M.dm_mask))
 
-    # if weights is None: 
-    #     weights = np.array(Nwaves*[1])
-    #     # TODO: implement weights for each wavelength correctly
-
-    J_bb = np.sum(mono_Js)/Nwaves + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
-    dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves + ensure_np_array( r_cond * 2*del_acts_waves )
-    
+    if weights is None: 
+        J_bb = np.sum(mono_Js)/Nwaves + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
+        dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves + ensure_np_array( r_cond * 2*del_acts_waves )
+    else: 
+        J_bb = np.sum(weights * mono_Js) / np.sum(weights) + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
+        dJ_dA_bb = np.sum(weights[:, None] * mono_dJ_dAs, axis=0) / np.sum(weights) + ensure_np_array( r_cond * 2*del_acts_waves )
+        
     return J_bb, dJ_dA_bb
 
 
