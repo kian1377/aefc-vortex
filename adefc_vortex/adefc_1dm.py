@@ -1,81 +1,12 @@
 from .math_module import xp, xcipy, ensure_np_array
 from adefc_vortex import utils
 from adefc_vortex.imshows import imshow1, imshow2, imshow3
+import adefc_vortex.pwp as pwp
 
 import numpy as np
 from scipy.optimize import minimize
 import time
 import copy
-
-def run_pwp(I, 
-            M, 
-            control_mask, 
-            probes, probe_amp, 
-            reg_cond=1e-3, 
-            plot=False,
-            plot_est=False,
-            ):
-    
-    Nmask = int(control_mask.sum())
-    Nprobes = probes.shape[0]
-
-    current_acts = I.get_dm()[M.dm_mask]
-
-    I.subtract_dark = False
-    Ip = []
-    In = []
-    for i in range(Nprobes):
-        for s in [-1, 1]:
-            I.add_dm(s*probe_amp*probes[i])
-            coro_im = I.snap()
-            I.add_dm(-s*probe_amp*probes[i]) # remove probe from DM
-
-            if s==-1: 
-                In.append(coro_im)
-            else: 
-                Ip.append(coro_im)
-        
-    E_probes = xp.zeros((probes.shape[0], 2*Nmask))
-    I_diff = xp.zeros((probes.shape[0], Nmask))
-    for i in range(Nprobes):
-        if i==0: 
-            E_nom = M.forward(current_acts, use_vortex=True)
-        E_with_probe = M.forward(xp.array(current_acts) + xp.array(probe_amp*probes[i])[M.dm_mask], use_vortex=True)
-        E_probe = E_with_probe - E_nom
-        diff_im = Ip[i] - In[i]
-        if plot:
-            imshow3(diff_im, xp.abs(E_probe), xp.angle(E_probe),
-                    'Difference Image', f'Probe {i+1}: '+'$|E_{probe}|$', f'Probe {i+1}: '+r'$\angle E_{probe}$', 
-                    cmap3='twilight')
-            
-        E_probes[i, ::2] = E_probe[control_mask].real
-        E_probes[i, 1::2] = E_probe[control_mask].imag
-        I_diff[i, :] = diff_im[control_mask]
-    
-    # Use batch process to estimate each pixel individually
-    E_est = xp.zeros(Nmask, dtype=xp.complex128)
-    for i in range(Nmask):
-        delI = I_diff[:, i]
-        H = 4*xp.array([E_probes[:,2*i], E_probes[:,2*i + 1]]).T
-        Hinv = xp.linalg.pinv(H.T@H, reg_cond)@H.T
-    
-        est = Hinv.dot(delI)
-
-        E_est[i] = est[0] + 1j*est[1]
-        
-    E_est_2d = xp.zeros((I.npsf,I.npsf), dtype=xp.complex128)
-    E_est_2d[control_mask] = E_est
-
-    if plot or plot_est:
-        I_est = xp.abs(E_est_2d)**2
-        P_est = xp.angle(E_est_2d)
-        imshow2(I_est, P_est, 
-                'Estimated Intensity', 'Estimated Phase',
-                lognorm1=True, vmin1=xp.max(I_est)/1e3, 
-                cmap2='twilight',
-                pxscl=M.psf_pixelscale_lamD)
-        
-    return E_est_2d
 
 def run(I, 
         M, 
@@ -99,11 +30,12 @@ def run(I,
     del_command = xp.zeros((M.Nact,M.Nact)) # array to fill with actuator solutions
     del_acts0 = np.zeros(M.Nacts) # initial guess is always just zeros
     for i in range(Nitr):
-        print('Running estimation algorithm ...')
-        
+
         if pwp_params is not None: 
-            E_ab = run_pwp(I, M, **pwp_params)
+            print('Running PWP ...')
+            E_ab = pwp.run_1dm(I, M, **pwp_params)
         else:
+            print('Computing E-field with model ...')
             E_ab = I.calc_wf()
         
         print('Computing EFC command with L-BFGS')
@@ -157,5 +89,85 @@ def run(I,
                 pxscl3=I.psf_pixelscale_lamDc, lognorm3=True, vmin3=vmin)
 
     return data
+
+import matplotlib.pyplot as plt
+plt.rcParams['image.origin']='lower'
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.colors import LogNorm, Normalize
+from matplotlib.gridspec import GridSpec
+
+def plot_pwp(probes, E_probes, diff_ims, E_est, vmin=1e-8, vmax=1e-4):
+    probes = ensure_np_array(probes)
+    E_probes = ensure_np_array(E_probes)
+    diff_ims = ensure_np_array(diff_ims)
+    E_est = ensure_np_array(E_est)
+
+    fig = plt.figure(figsize=(20, 15), dpi=125)
+    gs = GridSpec(3, 4, figure=fig)
+
+    title_fz = 16
+
+    ax = fig.add_subplot(gs[0, 0])
+    ax.imshow(probes[0], cmap='viridis',)
+    ax.set_title('Probe 1', fontsize=title_fz)
+
+    ax = fig.add_subplot(gs[0, 1])
+    ax.imshow(np.abs(E_probes[0]), cmap='magma',)
+    ax.set_title('Probe 1 Model-based Amplitude', fontsize=title_fz)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    ax = fig.add_subplot(gs[0, 2])
+    ax.imshow(np.angle(E_probes[0]), cmap='twilight',)
+    ax.set_title('Probe 1 Model-based Phase', fontsize=title_fz)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    ax = fig.add_subplot(gs[0, 3])
+    ax.imshow(diff_ims[0], cmap='magma',)
+    ax.set_title('Probe 1 Difference Image', fontsize=title_fz)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    ax = fig.add_subplot(gs[1, 0])
+    ax.imshow(probes[1], cmap='viridis',)
+    ax.set_title('Probe 2', fontsize=title_fz)
+
+    ax = fig.add_subplot(gs[1, 1])
+    ax.imshow(np.abs(E_probes[1]), cmap='magma',)
+    ax.set_title('Probe 2 Model-based Amplitude', fontsize=title_fz)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    ax = fig.add_subplot(gs[1, 2])
+    ax.imshow(np.angle(E_probes[1]), cmap='twilight',)
+    ax.set_title('Probe 2 Model-based Phase', fontsize=title_fz)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    ax = fig.add_subplot(gs[1, 3])
+    ax.imshow(diff_ims[1], cmap='magma',)
+    ax.set_title('Probe 2 Difference Image', fontsize=title_fz)
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    ax = fig.add_subplot(gs[2, :2])
+    im = ax.imshow(np.abs(E_est)**2, cmap='magma', norm=LogNorm(vmin=vmin, vmax=vmax))
+    ax.set_title('Final Estimated Intensity: ' + r'$|E_{ab}|^2$', fontsize=title_fz+4)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="4%", pad=0.075)
+    cbar = fig.colorbar(im, cax=cax,)
+    cbar.ax.tick_params(labelsize=14)
+    cbar.ax.set_ylabel('NI', rotation=0, labelpad=10, fontsize=14)
+    ax.set_position([0.2, 0.025, 0.3, 0.3]) # [left, bottom, width, height]
+
+    ax = fig.add_subplot(gs[2, 2:])
+    im = ax.imshow(np.angle(E_est), cmap='twilight',)
+    ax.set_title('Final Estimated Phase: ' + r'$\angle E_{ab}$', fontsize=title_fz+4)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="4%", pad=0.075)
+    cbar = fig.colorbar(im, cax=cax)
+    cbar.ax.tick_params(labelsize=14)
+    ax.set_position([0.55, 0.025, 0.3, 0.3]) # [left, bottom, width, height]
 
 

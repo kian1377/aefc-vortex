@@ -34,10 +34,8 @@ class MODEL():
     def __init__(self):
 
         # initialize physical parameters
-        self.wavelength_c = 650e-9
-        self.waves = np.array([self.wavelength_c])
+        self.wavelength_c = 633e-9
 
-        self.pupil_diam = 6.5*u.m
         self.dm_beam_diam = 9.6*u.mm
         self.d_dm1_dm2 = 283.569*u.mm
         # self.d_dm1_dm2 = 0*u.mm
@@ -49,8 +47,6 @@ class MODEL():
         self.psf_pixelscale_lamD = self.psf_pixelscale_lamDc
         self.npsf = 100
 
-        self.wavelength = 650e-9
-
         self.Imax_ref = 1
 
         # initialize sampling parameters and load masks
@@ -58,10 +54,10 @@ class MODEL():
         self.oversample = 4.096
         self.N = int(self.npix*self.oversample)
 
-        pwf = poppy.FresnelWavefront(beam_radius=self.pupil_diam/2, npix=self.npix, oversample=1) # pupil wavefront
-        self.APERTURE = poppy.CircularAperture(radius=self.pupil_diam/2).get_transmission(pwf)
+        pwf = poppy.FresnelWavefront(beam_radius=self.dm_beam_diam/2, npix=self.npix, oversample=1) # pupil wavefront
+        self.APERTURE = poppy.CircularAperture(radius=self.dm_beam_diam/2).get_transmission(pwf)
         self.APMASK = self.APERTURE>0
-        self.LYOT = poppy.CircularAperture(radius=self.lyot_ratio*self.pupil_diam/2).get_transmission(pwf)
+        self.LYOT = poppy.CircularAperture(radius=self.lyot_ratio*self.dm_beam_diam/2).get_transmission(pwf)
         self.AMP = xp.ones((self.npix,self.npix))
         self.OPD = xp.zeros((self.npix,self.npix))
 
@@ -151,13 +147,13 @@ class MODEL():
         E_DM1 = E_EP * utils.pad_or_crop(DM1_PHASOR, self.N)
         if plot: imshow2(xp.abs(E_DM1), xp.angle(E_DM1), 'After DM1 WF', npix=1.5*self.npix)
 
-        E_DM2P = props.ang_spec(E_DM1, self.wavelength*u.m, self.d_dm1_dm2, self.dm_pxscl)
+        E_DM2P = props.ang_spec(E_DM1, wavelength*u.m, self.d_dm1_dm2, self.dm_pxscl)
         if plot: imshow2(xp.abs(E_DM2P), xp.angle(E_DM2P), 'At DM2 WF', npix=1.5*self.npix)
 
         E_DM2 = E_DM2P * utils.pad_or_crop(DM2_PHASOR, self.N)
         if plot: imshow2(xp.abs(E_DM2), xp.angle(E_DM2), 'After DM2 WF', npix=1.5*self.npix)
 
-        E_PUP = props.ang_spec(E_DM2, self.wavelength*u.m, -self.d_dm1_dm2, self.dm_pxscl)
+        E_PUP = props.ang_spec(E_DM2, wavelength*u.m, -self.d_dm1_dm2, self.dm_pxscl)
         if plot: imshow2(xp.abs(E_PUP), xp.angle(E_PUP), 'Back to Pupil WF', npix=1.5*self.npix)
 
         if use_vortex:
