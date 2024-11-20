@@ -283,7 +283,12 @@ def imshow3(arr1, arr2, arr3,
     if display_fig: display(fig)
     if return_fig: return fig,ax
     
-def plot_data(data, vmin=1e-9, vmax=1e-4, fname=None):
+def plot_data(data, 
+              imvmin=1e-9, imvmax=1e-4, 
+              vmin=1e-9, vmax=1e-4, 
+              xticks=None,
+              fname=None,
+              ):
     ims = ensure_np_array( xp.array(data['images']) ) 
     control_mask = ensure_np_array( data['control_mask'] )
     # print(type(control_mask))
@@ -300,7 +305,7 @@ def plot_data(data, vmin=1e-9, vmax=1e-4, fname=None):
     ext = psf_pixelscale_lamD*npsf/2
     extent = [-ext, ext, -ext, ext]
 
-    im1 = ax[0].imshow(ref_im, norm=LogNorm(vmax=vmax, vmin=vmin), cmap='magma', extent=extent)
+    im1 = ax[0].imshow(ref_im, norm=LogNorm(vmax=imvmax, vmin=imvmin), cmap='magma', extent=extent)
     ax[0].set_title(f'Reference Image:\nMean Contrast = {mean_nis[0]:.2e}', fontsize=14)
     # divider = make_axes_locatable(ax[0])
     # cax = divider.append_axes("right", size="4%", pad=0.075)
@@ -308,7 +313,7 @@ def plot_data(data, vmin=1e-9, vmax=1e-4, fname=None):
     # cbar.ax.set_ylabel('NI', rotation=0, labelpad=7)
     ax[0].set_position([0, 0.3, 0.25, 0.25]) # [left, bottom, width, height]
 
-    im2 = ax[1].imshow( best_im, norm=LogNorm(vmax=vmax, vmin=vmin), cmap='magma', extent=extent)
+    im2 = ax[1].imshow( best_im, norm=LogNorm(vmax=imvmax, vmin=imvmin), cmap='magma', extent=extent)
     ax[1].set_title(f'Best Iteration:\nMean Contrast = {mean_nis[ibest]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[1])
     cax = divider.append_axes("right", size="4%", pad=0.075)
@@ -326,7 +331,8 @@ def plot_data(data, vmin=1e-9, vmax=1e-4, fname=None):
     ax[2].set_xlabel('Iteration Number', fontsize=12, )
     ax[2].set_ylabel('Mean Contrast', fontsize=14, labelpad=1)
     ax[2].set_ylim([vmin, vmax])
-    ax[2].set_xticks(np.arange(0,Nitr,2))
+    xticks = np.arange(0,Nitr,2) if xticks is None else xticks
+    ax[2].set_xticks(xticks)
     ax[2].set_position([0.525, 0.3, 0.25, 0.25])
 
     if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
