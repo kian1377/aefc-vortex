@@ -284,7 +284,8 @@ def imshow3(arr1, arr2, arr3,
     if return_fig: return fig,ax
     
 def plot_data(data, 
-              imvmin=1e-9, imvmax=1e-4, 
+              im1vmin=1e-9, im1vmax=1e-4, 
+              im2vmin=1e-9, im2vmax=1e-4, 
               vmin=1e-9, vmax=1e-4, 
               xticks=None,
               fname=None,
@@ -301,25 +302,25 @@ def plot_data(data,
     ref_im = ensure_np_array(data['images'][0])
     best_im = ensure_np_array(data['images'][ibest])
 
-    fig,ax = plt.subplots(nrows=1, ncols=3, figsize=(15,10), dpi=125, gridspec_kw={'width_ratios': [1, 1, 1], })
+    fig,ax = plt.subplots(nrows=1, ncols=3, figsize=(16,9), dpi=125, gridspec_kw={'width_ratios': [1, 1, 1], })
     ext = psf_pixelscale_lamD*npsf/2
     extent = [-ext, ext, -ext, ext]
 
-    im1 = ax[0].imshow(ref_im, norm=LogNorm(vmax=imvmax, vmin=imvmin), cmap='magma', extent=extent)
+    im1 = ax[0].imshow(ref_im, norm=LogNorm(vmax=im1vmax, vmin=im1vmin), cmap='magma', extent=extent)
     ax[0].set_title(f'Reference Image:\nMean Contrast = {mean_nis[0]:.2e}', fontsize=14)
-    # divider = make_axes_locatable(ax[0])
-    # cax = divider.append_axes("right", size="4%", pad=0.075)
-    # cbar = fig.colorbar(im1, cax=cax)
-    # cbar.ax.set_ylabel('NI', rotation=0, labelpad=7)
+    divider = make_axes_locatable(ax[0])
+    cax = divider.append_axes("right", size="4%", pad=0.075)
+    cbar = fig.colorbar(im1, cax=cax)
+    cbar.ax.set_ylabel('NI', rotation=0, labelpad=7)
     ax[0].set_position([0, 0.3, 0.25, 0.25]) # [left, bottom, width, height]
 
-    im2 = ax[1].imshow( best_im, norm=LogNorm(vmax=imvmax, vmin=imvmin), cmap='magma', extent=extent)
+    im2 = ax[1].imshow( best_im, norm=LogNorm(vmax=im2vmax, vmin=im2vmin), cmap='magma', extent=extent)
     ax[1].set_title(f'Best Iteration:\nMean Contrast = {mean_nis[ibest]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[1])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im2, cax=cax,)
     cbar.ax.set_ylabel('NI', rotation=0, labelpad=7)
-    ax[1].set_position([0.212, 0.3, 0.25, 0.25])
+    ax[1].set_position([0.225, 0.3, 0.25, 0.25])
 
     ax[0].set_ylabel('Y [$\lambda/D$]', fontsize=12, labelpad=-5)
     ax[0].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)

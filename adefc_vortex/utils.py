@@ -354,7 +354,33 @@ def create_fourier_probes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa,
 
     return probes
 
+def create_all_poke_modes(dm_mask, Ndms=1):
+    Nact = dm_mask.shape[0]
+    Nacts = int(np.sum(dm_mask))
+    poke_modes = xp.zeros((Nacts, Nact, Nact))
+    count=0
+    for i in range(Nact):
+        for j in range(Nact):
+            if dm_mask[i,j]:
+                poke_modes[count, i,j] = 1
+                count+=1
 
+    poke_modes = poke_modes[:,:].reshape(Nacts, Nact**2)
+    print(poke_modes.shape)
+    if Ndms==2:
+        poke_modes_dm1 = xp.concatenate([poke_modes, xp.zeros_like(poke_modes)])
+        poke_modes_dm2 = xp.concatenate([xp.zeros_like(poke_modes), poke_modes])
+        poke_modes = xp.concatenate([poke_modes_dm1, poke_modes_dm2], axis=1)
+    
+    return poke_modes
 
+def beta_reg(S, beta=-1):
+    # S is the sensitivity matrix also known as the Jacobian
+    sts = xp.matmul(S.T, S)
+    rho = xp.diag(sts)
+    alpha2 = rho.max()
+
+    control_matrix = xp.matmul( xp.linalg.inv( sts + alpha2*10.0**(beta)*xp.eye(sts.shape[0]) ), S.T)
+    return control_matrix
 
 
