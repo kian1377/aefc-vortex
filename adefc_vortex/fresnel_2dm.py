@@ -30,6 +30,12 @@ class CORO():
                  dm1_ref=xp.zeros((34,34)),
                  dm2_ref=xp.zeros((34,34)),
                  d_dm1_dm2=283.569*u.mm, 
+                 dm1_shift=np.array([0,0])*u.m,
+                 dm2_shift=np.array([0,0])*u.m,
+                 dm1_gains=xp.ones((34,34)),
+                 dm2_gains=xp.ones((34,34)),
+                 lyot_shift=np.array([0,0])*u.m,
+                 inf_fun_coupling=0.15,
                  use_opds=False,
                  use_aps=False,
                 ):
@@ -89,7 +95,7 @@ class CORO():
         self.APERTURE = poppy.CircularAperture(radius=self.pupil_diam/2)
         self.GAP_MASK = self.APERTURE.get_transmission(pwf)
         self.BAP_MASK = self.APERTURE.get_transmission(pwf)>0
-        self.LYOT = poppy.CircularAperture(radius=self.lyot_diam/2)
+        self.LYOT = poppy.CircularAperture(radius=self.lyot_diam/2, shift_x=lyot_shift[0], shift_y=lyot_shift[1])
 
         self.DETECTOR = poppy.Detector(pixelscale=self.psf_pixelscale, fov_pixels=self.npsf, interp_order=5, name='Scicam (FP)')
         self.Imax_ref = 1
@@ -129,17 +135,20 @@ class CORO():
         self.act_spacing = 300e-6*u.m
         pupil_pxscl = self.pupil_diam.to_value(u.m)/self.npix
         sampling = self.act_spacing.to_value(u.m)/pupil_pxscl
-        inf_fun = dm.make_gaussian_inf_fun(act_spacing=300e-6*u.m, sampling=sampling, coupling=0.15,  Nact=self.Nact + 2)
-        self.DM1 = dm.DeformableMirror(inf_fun=inf_fun, inf_sampling=sampling, name='DM1 (pupil)',)
-        self.DM2 = dm.DeformableMirror(inf_fun=inf_fun, inf_sampling=sampling, name='DM2 ',)
+        inf_fun = dm.make_gaussian_inf_fun(act_spacing=self.act_spacing, sampling=sampling, coupling=inf_fun_coupling,  Nact=self.Nact + 2)
+        self.DM1 = dm.DeformableMirror(inf_fun=inf_fun, inf_sampling=sampling, name='DM1 (pupil)', shift=dm1_shift)
+        self.DM2 = dm.DeformableMirror(inf_fun=inf_fun, inf_sampling=sampling, name='DM2 ', shift=dm2_shift)
         self.Nacts = self.DM1.Nacts
         self.act_spacing = self.DM1.act_spacing
         self.dm_active_diam = self.DM1.active_diam
+        self.dm1_gains = dm1_gains
+        self.dm2_gains = dm2_gains
         self.dm_mask = self.DM1.dm_mask
         self.dm1_ref = dm1_ref
         self.set_dm1(dm1_ref)
         self.dm2_ref = dm2_ref
         self.set_dm2(dm2_ref)
+        
     
     def getattr(self, attr):
         return getattr(self, attr)
@@ -153,19 +162,19 @@ class CORO():
         self.set_dm2(xp.zeros((self.Nact,self.Nact)))
     
     def set_dm1(self, command):
-        self.DM1.command = command
+        self.DM1.command = self.dm1_gains * command
         
     def add_dm1(self, command):
-        self.DM1.command += command
+        self.DM1.command += self.dm1_gains * command
         
     def get_dm1(self):
         return copy.copy(self.DM1.command)
     
     def set_dm2(self, command):
-        self.DM2.command = command
+        self.DM2.command = self.dm2_gains * command
         
     def add_dm2(self, command):
-        self.DM2.command += command
+        self.DM2.command += self.dm2_gains * command
         
     def get_dm2(self):
         return copy.copy(self.DM2.command)

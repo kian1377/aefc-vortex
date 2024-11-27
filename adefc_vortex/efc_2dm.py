@@ -111,7 +111,8 @@ def calc_wfs(I, waves, control_mask, plot=False):
 
     return E_abs
 
-def run_bb(I, 
+def run_bb(
+        I, 
         control_matrix,
         control_mask,
         control_waves,
