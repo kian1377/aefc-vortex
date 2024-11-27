@@ -41,7 +41,7 @@ class MODEL():
         # self.d_dm1_dm2 = 0*u.mm
         self.lyot_pupil_diam = 7.680*u.mm
         self.lyot_stop_diam = 0.9 * self.lyot_pupil_diam
-        self.lyot_ratio = (self.lyot_stop_diam / self.lyot_pupil_diam).decompose().value
+        self.lyot_ratio = 0.9
         self.control_rad = 34/2 * 9.6/10.2 * self.lyot_ratio
         self.psf_pixelscale_lamDc = 0.3544
         self.psf_pixelscale_lamD = self.psf_pixelscale_lamDc
