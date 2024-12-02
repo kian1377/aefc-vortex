@@ -29,7 +29,7 @@ class CORO():
     def __init__(self,
                  dm1_ref=xp.zeros((96,96)),
                  dm2_ref=xp.zeros((96,96)),
-                 d_dm1_dm2=283.569*u.mm, 
+                 d_dm1_dm2=700*u.mm, 
                  dm1_shift=np.array([0,0])*u.m,
                  dm2_shift=np.array([0,0])*u.m,
                  dm1_gains=xp.ones((96,96)),
@@ -45,19 +45,20 @@ class CORO():
         self.bandpasses = np.array([self.wavelength_c])
 
         self.pupil_diam = 47*u.mm
-        self.lyot_pupil_diam = 400/500 * self.pupil_diam
-        self.lyot_diam = 400/500 * 0.9 * self.pupil_diam
+        self.lyot_pupil_diam = 4/5 * self.pupil_diam
+        self.lyot_diam = 4/5 * 0.9 * self.pupil_diam
+        self.control_rad = 96/2 * 47/48 * 0.9
         # self.exit_pupil_diam = 250/400 * self.lyot_diam
 
-        self.fl_oap1 = 250*u.mm
-        self.fl_oap2 = 250*u.mm
-        self.fl_oap3 = 500*u.mm
-        self.fl_oap4 = 400*u.mm
-        self.fl_oap5 = 400*u.mm
-        self.fl_oap6 = 400*u.mm
-        self.fl_oap7 = 250*u.mm
-        self.fl_oap8 = 250*u.mm
-        self.fl_oap9 = 600*u.mm
+        self.fl_oap1 = 500*u.mm
+        self.fl_oap2 = 500*u.mm
+        self.fl_oap3 = 1000*u.mm
+        self.fl_oap4 = 800*u.mm
+        self.fl_oap5 = 800*u.mm
+        self.fl_oap6 = 800*u.mm
+        self.fl_oap7 = 500*u.mm
+        self.fl_oap8 = 500*u.mm
+        self.fl_oap9 = 750*u.mm
 
         self.d_pupil_oap1 = self.fl_oap1
         self.d_oap1_ifp1 = self.fl_oap1
@@ -86,7 +87,7 @@ class CORO():
         self.npix = 1000
         self.oversample = 2.048
         self.N = int(self.npix*self.oversample)
-        self.npsf = 100
+        self.npsf = 256
         self.psf_pixelscale = 5e-6*u.m/u.pix
         self.um_per_lamD = (self.wavelength_c*u.m * self.fl_oap9/(self.lyot_diam)).to(u.um)
         self.psf_pixelscale_lamDc = self.psf_pixelscale.to_value(u.um/u.pix)/self.um_per_lamD.value
@@ -136,8 +137,8 @@ class CORO():
         pupil_pxscl = self.pupil_diam.to_value(u.m)/self.npix
         sampling = self.act_spacing.to_value(u.m)/pupil_pxscl
         inf_fun = dm.make_gaussian_inf_fun(act_spacing=self.act_spacing, sampling=sampling, coupling=inf_fun_coupling,  Nact=self.Nact + 2)
-        self.DM1 = dm.DeformableMirror(inf_fun=inf_fun, inf_sampling=sampling, name='DM1 (pupil)', shift=dm1_shift)
-        self.DM2 = dm.DeformableMirror(inf_fun=inf_fun, inf_sampling=sampling, name='DM2 ', shift=dm2_shift)
+        self.DM1 = dm.DeformableMirror(inf_fun=inf_fun, inf_sampling=sampling, Nact=self.Nact, name='DM1 (pupil)', shift=dm1_shift)
+        self.DM2 = dm.DeformableMirror(inf_fun=inf_fun, inf_sampling=sampling, Nact=self.Nact, name='DM2 ', shift=dm2_shift)
         self.Nacts = self.DM1.Nacts
         self.act_spacing = self.DM1.act_spacing
         self.dm_active_diam = self.DM1.active_diam
@@ -185,8 +186,8 @@ class CORO():
         self.opd_index = 2.75
         self.pol_opd_index = 4.0
         # rms_wfes = np.random.randn(20)*2*u.nm + 4*u.nm
-        rms_wfes = 20*[6*u.nm]
-        seeds = np.linspace(1,20,20).astype(int)
+        rms_wfes = 20*[8*u.nm]
+        seeds = np.linspace(100,120,20).astype(int)
 
         self.oap1_opd = poppy.StatisticalPSDWFE('OAP1 OPD', index=self.opd_index, wfe=rms_wfes[1], radius=self.oap_diams/2, seed=seeds[1])
         self.oap2_opd = poppy.StatisticalPSDWFE('OAP2 OPD', index=self.opd_index, wfe=rms_wfes[2], radius=self.oap_diams/2, seed=seeds[2])

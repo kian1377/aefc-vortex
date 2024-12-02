@@ -92,7 +92,7 @@ def run(I,
         data['del_dm1_commands'].append(copy.copy(del_dm1))
         data['dm2_commands'].append(copy.copy(total_dm2))
         data['del_dm2_commands'].append(copy.copy(del_dm2))
-        
+        print(i)
         imshow3(del_dm1, del_dm2, image_ni, 
                 f'$\delta$DM1', f'$\delta$DM2', 
                 f'Iteration {starting_itr + i:d} Image\nMean NI = {mean_ni:.3e}',
@@ -143,9 +143,9 @@ def run_bb(
             print('Computing E-field with model ...')
             E_abs = calc_wfs(I, control_waves, control_mask)
 
-        for i in range(Nwaves):
-            E_ab_vec[i*2*Nmask:(i+1)*2*Nmask][::2] = E_abs[i][control_mask].real
-            E_ab_vec[i*2*Nmask:(i+1)*2*Nmask][1::2] = E_abs[i][control_mask].imag
+        for j in range(Nwaves):
+            E_ab_vec[j*2*Nmask:(j+1)*2*Nmask][::2] = E_abs[j][control_mask].real
+            E_ab_vec[j*2*Nmask:(j+1)*2*Nmask][1::2] = E_abs[j][control_mask].imag
 
         del_acts = - gain * control_matrix.dot(E_ab_vec)
         del_dm1[I.dm_mask] = del_acts[:Nacts//2]
@@ -164,7 +164,7 @@ def run_bb(
         data['del_dm1_commands'].append(copy.copy(del_dm1))
         data['dm2_commands'].append(copy.copy(total_dm2))
         data['del_dm2_commands'].append(copy.copy(del_dm2))
-        
+        print(i)
         imshow3(del_dm1, del_dm2, image_ni, 
                 f'$\delta$DM1', f'$\delta$DM2', 
                 f'Iteration {starting_itr + i:d} Image\nMean NI = {mean_ni:.3e}',
