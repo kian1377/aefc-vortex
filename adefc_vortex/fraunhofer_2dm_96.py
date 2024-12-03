@@ -369,7 +369,8 @@ def val_and_grad_bb(
     mono_rmad_vars = {
         'current_acts':current_acts,
         'control_mask':control_mask,
-        'r_cond':0,
+        # 'r_cond':0,
+        'r_cond':r_cond,
     }
     for i in range(Nwaves):
         mono_rmad_vars.update({'E_ab':copy.copy(E_abs[i])})
@@ -385,15 +386,31 @@ def val_and_grad_bb(
         mono_Js[i] = J_mono
         mono_dJ_dAs[i] = dJ_dA_mono
 
-    # imshow1(acts_to_command(dJ_dA_monos[2] - dJ_dA_monos[0], M.dm_mask))
-
+    # if weights is None: 
+    #     J_bb = np.sum(mono_Js)/Nwaves + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
+    #     dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves + ensure_np_array( r_cond * 2*del_acts_waves )
+    # else: 
+    #     J_bb = np.sum(weights * mono_Js) / np.sum(weights) + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
+    #     dJ_dA_bb = np.sum(weights[:, None] * mono_dJ_dAs, axis=0) / np.sum(weights) + ensure_np_array( r_cond * 2*del_acts_waves )
+    
     if weights is None: 
-        J_bb = np.sum(mono_Js)/Nwaves + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
-        dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves + ensure_np_array( r_cond * 2*del_acts_waves )
+        J_bb = np.sum(mono_Js)/Nwaves
+        dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves
     else: 
-        J_bb = np.sum(weights * mono_Js) / np.sum(weights) + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
-        dJ_dA_bb = np.sum(weights[:, None] * mono_dJ_dAs, axis=0) / np.sum(weights) + ensure_np_array( r_cond * 2*del_acts_waves )
-        
+        J_bb = np.sum(weights * mono_Js) / np.sum(weights)
+        dJ_dA_bb = np.sum(weights[:, None] * mono_dJ_dAs, axis=0) / np.sum(weights)
+    
+    # # Testing beta regularization
+    # dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)
+    # alpha2 = dJ_dA_bb.dot(dJ_dA_bb)
+    # E_abs_norm = E_abs[:,control_mask].ravel().dot(E_abs[:,control_mask].ravel().conjugate()).real
+    # J_acts = alpha2 * 10**(r_cond) * ensure_np_array( del_acts.dot(del_acts) )
+    # print(J_E)
+    # print(J_acts)
+    # dJ_dA_bb = dJ_dA_bb + alpha2 * 10**(r_cond) * 2 * ensure_np_array( del_acts ) 
+    
+    # J_bb = (J_E + J_acts)
+
     return J_bb, dJ_dA_bb
 
 

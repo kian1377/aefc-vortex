@@ -186,7 +186,7 @@ class CORO():
         self.opd_index = 2.75
         self.pol_opd_index = 4.0
         # rms_wfes = np.random.randn(20)*2*u.nm + 4*u.nm
-        rms_wfes = 20*[8*u.nm]
+        rms_wfes = 20*[6*u.nm]
         seeds = np.linspace(100,120,20).astype(int)
 
         self.oap1_opd = poppy.StatisticalPSDWFE('OAP1 OPD', index=self.opd_index, wfe=rms_wfes[1], radius=self.oap_diams/2, seed=seeds[1])
