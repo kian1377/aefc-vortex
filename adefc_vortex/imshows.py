@@ -284,8 +284,7 @@ def imshow3(arr1, arr2, arr3,
     if return_fig: return fig,ax
     
 def plot_data(data, 
-              im1vmin=1e-9, im1vmax=1e-4, 
-              im2vmin=1e-9, im2vmax=1e-4, 
+              imvmin=1e-9, imvmax=1e-4, 
               vmin=1e-9, vmax=1e-4, 
               xticks=None,
               fname=None,
@@ -299,23 +298,75 @@ def plot_data(data,
 
     mean_nis = np.mean(ims[:,control_mask], axis=1)
     ibest = np.argmin(mean_nis)
-    ref_im = ensure_np_array(data['images'][0])
     best_im = ensure_np_array(data['images'][ibest])
+
+    fig,ax = plt.subplots(nrows=1, ncols=2, figsize=(12,6), dpi=125)
+    ext = psf_pixelscale_lamD*npsf/2
+    extent = [-ext, ext, -ext, ext]
+
+    im = ax[0].imshow( best_im, norm=LogNorm(vmax=imvmax, vmin=imvmin), cmap='magma', extent=extent)
+    ax[0].set_title(f'Best Iteration:\nMean Contrast = {mean_nis[ibest]:.2e}', fontsize=14)
+    divider = make_axes_locatable(ax[0])
+    cax = divider.append_axes("right", size="4%", pad=0.075)
+    cbar = fig.colorbar(im, cax=cax,)
+    cbar.ax.set_ylabel('NI', rotation=0, labelpad=7)
+    ax[0].set_position([0.05, 0, 0.45, 0.45])
+
+    ax[0].set_ylabel('Y [$\lambda/D$]', fontsize=12, labelpad=-5)
+    ax[0].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
+
+    ax[1].set_title('Mean Contrast per Iteration', fontsize=14)
+    ax[1].semilogy(mean_nis, label='3.6% Bandpass')
+    ax[1].grid()
+    ax[1].set_xlabel('Iteration Number', fontsize=12, )
+    ax[1].set_ylabel('Mean Contrast', fontsize=14, labelpad=1)
+    ax[1].set_ylim([vmin, vmax])
+    xticks = np.arange(0,Nitr,2) if xticks is None else xticks
+    ax[1].set_xticks(xticks)
+    ax[1].set_position([0.525, 0, 0.45, 0.45])
+
+    if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
+
+
+def plot_both_data(efc_data, aefc_data,  
+                    im1vmin=1e-9, im1vmax=1e-4, 
+                    im2vmin=1e-9, im2vmax=1e-4, 
+                    vmin=1e-9, vmax=1e-4, 
+                    xticks=None,
+                    fname=None,
+                    ):
+    efc_ims = ensure_np_array( xp.array(efc_data['images']) ) 
+    aefc_ims = ensure_np_array( xp.array(aefc_data['images']) ) 
+
+    # print(type(control_mask))
+    Nitr_efc = efc_ims.shape[0]
+    Nitr_aefc = efc_ims.shape[0]
+
+    control_mask = ensure_np_array( efc_data['control_mask'] )
+    npsf = efc_ims.shape[1]
+    psf_pixelscale_lamD = efc_data['pixelscale']
+
+    mean_nis_efc = np.mean(efc_ims[:,control_mask], axis=1)
+    ibest_efc = np.argmin(mean_nis_efc)
+    best_efc_im = ensure_np_array(efc_data['images'][ibest_efc])
+    mean_nis_aefc = np.mean(aefc_ims[:,control_mask], axis=1)
+    ibest_aefc = np.argmin(mean_nis_aefc)
+    best_aefc_im = ensure_np_array(aefc_data['images'][ibest_aefc])
 
     fig,ax = plt.subplots(nrows=1, ncols=3, figsize=(16,9), dpi=125, gridspec_kw={'width_ratios': [1, 1, 1], })
     ext = psf_pixelscale_lamD*npsf/2
     extent = [-ext, ext, -ext, ext]
 
-    im1 = ax[0].imshow(ref_im, norm=LogNorm(vmax=im1vmax, vmin=im1vmin), cmap='magma', extent=extent)
-    ax[0].set_title(f'Reference Image:\nMean Contrast = {mean_nis[0]:.2e}', fontsize=14)
+    im1 = ax[0].imshow(best_efc_im, norm=LogNorm(vmax=im1vmax, vmin=im1vmin), cmap='magma', extent=extent)
+    ax[0].set_title(f'Reference Image:\nMean Contrast = {mean_nis_efc[ibest_efc]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[0])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im1, cax=cax)
     cbar.ax.set_ylabel('NI', rotation=0, labelpad=7)
     ax[0].set_position([0, 0.3, 0.25, 0.25]) # [left, bottom, width, height]
 
-    im2 = ax[1].imshow( best_im, norm=LogNorm(vmax=im2vmax, vmin=im2vmin), cmap='magma', extent=extent)
-    ax[1].set_title(f'Best Iteration:\nMean Contrast = {mean_nis[ibest]:.2e}', fontsize=14)
+    im2 = ax[1].imshow( best_aefc_im, norm=LogNorm(vmax=im2vmax, vmin=im2vmin), cmap='magma', extent=extent)
+    ax[1].set_title(f'Best Iteration:\nMean Contrast = {mean_nis_aefc[ibest_aefc]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[1])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im2, cax=cax,)
@@ -327,13 +378,15 @@ def plot_data(data,
     ax[1].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
 
     ax[2].set_title('Mean Contrast per Iteration', fontsize=14)
-    ax[2].semilogy(mean_nis, label='3.6% Bandpass')
+    ax[2].semilogy(mean_nis_efc, label='EFC')
+    ax[2].semilogy(mean_nis_aefc, label='aEFC')
     ax[2].grid()
     ax[2].set_xlabel('Iteration Number', fontsize=12, )
     ax[2].set_ylabel('Mean Contrast', fontsize=14, labelpad=1)
     ax[2].set_ylim([vmin, vmax])
-    xticks = np.arange(0,Nitr,2) if xticks is None else xticks
+    xticks = np.arange(0, Nitr_efc,2) if xticks is None else xticks
     ax[2].set_xticks(xticks)
+    ax[2].legend(loc='upper right', fontsize=14)
     ax[2].set_position([0.525, 0.3, 0.25, 0.25])
 
     if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
