@@ -358,7 +358,7 @@ def plot_both_data(efc_data, aefc_data,
     extent = [-ext, ext, -ext, ext]
 
     im1 = ax[0].imshow(best_efc_im, norm=LogNorm(vmax=im1vmax, vmin=im1vmin), cmap='magma', extent=extent)
-    ax[0].set_title(f'Reference Image:\nMean Contrast = {mean_nis_efc[ibest_efc]:.2e}', fontsize=14)
+    ax[0].set_title(f'Best EFC Iteration:\nMean Contrast = {mean_nis_efc[ibest_efc]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[0])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im1, cax=cax)
@@ -366,7 +366,7 @@ def plot_both_data(efc_data, aefc_data,
     ax[0].set_position([0, 0.3, 0.25, 0.25]) # [left, bottom, width, height]
 
     im2 = ax[1].imshow( best_aefc_im, norm=LogNorm(vmax=im2vmax, vmin=im2vmin), cmap='magma', extent=extent)
-    ax[1].set_title(f'Best Iteration:\nMean Contrast = {mean_nis_aefc[ibest_aefc]:.2e}', fontsize=14)
+    ax[1].set_title(f'Best aEFC Iteration:\nMean Contrast = {mean_nis_aefc[ibest_aefc]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[1])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im2, cax=cax,)
