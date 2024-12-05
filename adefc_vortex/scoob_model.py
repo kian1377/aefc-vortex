@@ -80,7 +80,7 @@ class MODEL():
         y,x = (xp.indices((self.Nact, self.Nact)) - self.Nact//2 + 1/2)
         r = xp.sqrt(x**2 + y**2)
         self.dm_mask = r<(self.Nact/2 + 1/2)
-        self.dm_mask[25,21] = False
+        # self.dm_mask[25,21] = False
         self.Nacts = int(self.dm_mask.sum())
 
         self.inf_fun_fft = xp.fft.fftshift(xp.fft.fft2(xp.fft.ifftshift(self.inf_fun,)))
@@ -122,7 +122,10 @@ class MODEL():
         self.use_vortex = True
         self.dm_command = xp.zeros((self.Nact, self.Nact))
     
-    def forward(self, actuators, wavelength=633e-9, use_vortex=True, return_ints=False, plot=False, fancy_plot=False):
+    def forward(self, actuators, wavelength=633e-9, 
+                use_vortex=True, return_ints=False, 
+                plot=False, fancy_plot=False, 
+                fancy_plot_fname=None):
         dm_command = xp.zeros((self.Nact,self.Nact))
         dm_command[self.dm_mask] = xp.array(actuators)
         mft_command = self.Mx@dm_command@self.My
@@ -170,7 +173,10 @@ class MODEL():
         E_FP = xcipy.ndimage.rotate(E_FP, self.det_rotation, reshape=False, order=5)
         if plot: imshow2(xp.abs(E_FP)**2, xp.angle(E_FP), 'At SCICAM WF', lognorm1=True, cmap2='twilight')
 
-        if fancy_plot: fancy_plot_forward(dm_command, E_EP, DM_PHASOR, E_LP, E_FP, npix=self.npix, wavelength=wavelength)
+        if fancy_plot: 
+            fancy_plot_forward(dm_command, E_EP, DM_PHASOR, E_LP, E_FP, 
+                               npix=self.npix, wavelength=wavelength, 
+                               fname=fancy_plot_fname)
 
         if return_ints:
             return E_FP, E_EP, DM_PHASOR
@@ -209,7 +215,7 @@ class MODEL():
             im += xp.abs( fpwf )**2 / Nwaves
         return im
 
-def val_and_grad(del_acts, M, rmad_vars, verbose=False, plot=False, fancy_plot=False):
+def val_and_grad(del_acts, M, rmad_vars, verbose=False, plot=False, fancy_plot=False, fancy_plot_fname=None):
     # Convert array arguments into correct types
     del_acts = xp.array(del_acts)
     del_acts_waves = del_acts/M.wavelength_c
@@ -286,7 +292,7 @@ def val_and_grad(del_acts, M, rmad_vars, verbose=False, plot=False, fancy_plot=F
     
     dJ_dA = dJ_dA[M.dm_mask].real + xp.array( r_cond * 2*del_acts_waves )
 
-    if fancy_plot: fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, M.dm_mask)
+    if fancy_plot: fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, M.dm_mask, fname=fancy_plot_fname)
     
     return ensure_np_array(J), ensure_np_array(dJ_dA)
 
@@ -321,7 +327,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.colors import LogNorm
 
-def fancy_plot_forward(command, E_EP, DM_PHASOR, E_LP, fpwf, npix=1000, wavelength=633e-9):
+def fancy_plot_forward(command, E_EP, DM_PHASOR, E_LP, fpwf, npix=1000, wavelength=633e-9, fname=None):
     dm_surf = ensure_np_array(wavelength/(4*xp.pi) * utils.pad_or_crop(xp.angle(DM_PHASOR), 1.5*npix) )
     E_PUP = ensure_np_array(utils.pad_or_crop(E_EP * DM_PHASOR, 1.5*npix))
     E_LP = ensure_np_array(utils.pad_or_crop(E_LP, 1.5*npix))
@@ -369,7 +375,7 @@ def fancy_plot_forward(command, E_EP, DM_PHASOR, E_LP, fpwf, npix=1000, waveleng
     ax.set_yticks([])
 
     ax = fig.add_subplot(gs[0, 4])
-    ax.imshow(np.abs(fpwf)**2, cmap='magma', norm=LogNorm(vmin=1e-8, vmax=1e-4))
+    ax.imshow(np.abs(fpwf)**2, cmap='magma', norm=LogNorm(vmin=1e-7, vmax=1e-3))
     ax.set_title('Focal Plane Intensity', fontsize=title_fz)
     ax.set_xticks([])
     ax.set_yticks([])
@@ -381,8 +387,9 @@ def fancy_plot_forward(command, E_EP, DM_PHASOR, E_LP, fpwf, npix=1000, waveleng
     ax.set_yticks([])
 
     plt.subplots_adjust(hspace=-0.3)
+    if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
 
-def fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, dm_mask, npix=1000):
+def fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, dm_mask, npix=1000, fname=None):
 
     control_mask = ensure_np_array(control_mask)
     dJ_dE_DM = ensure_np_array(dJ_dE_DM)
@@ -397,13 +404,15 @@ def fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_m
     title_fz = 26
 
     ax = fig.add_subplot(gs[0, 0])
-    ax.imshow(np.abs(dJ_dE_DM)**2, cmap='magma', norm=LogNorm(vmin=1e-6))
+    # ax.imshow(np.abs(dJ_dE_DM)**2, cmap='magma', norm=LogNorm(vmin=1e-6))
+    ax.imshow(np.abs(dJ_dE_DM)**2 * control_mask, cmap='magma', norm=LogNorm(vmin=1e-6))
     ax.set_title(r'$| \frac{\partial J}{\partial E_{DM}} |^2$', fontsize=title_fz)
     ax.set_xticks([])
     ax.set_yticks([])
 
     ax = fig.add_subplot(gs[1, 0])
-    ax.imshow(np.angle(dJ_dE_DM), cmap='twilight',)
+    # ax.imshow(np.angle(dJ_dE_DM), cmap='twilight',)
+    ax.imshow(np.angle(dJ_dE_DM) * control_mask, cmap='twilight',)
     ax.set_title(r'$\angle \frac{\partial J}{\partial E_{DM}} $', fontsize=title_fz)
     ax.set_xticks([])
     ax.set_yticks([])
@@ -445,6 +454,7 @@ def fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_m
     ax.set_yticks([])
 
     plt.subplots_adjust(hspace=-0.2)
+    if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
 
 
 

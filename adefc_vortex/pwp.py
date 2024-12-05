@@ -21,6 +21,7 @@ def run(I,
         Ndms=1,
         plot=False,
         plot_est=False,
+        plot_fname=None, 
         return_all=False,
         ):
     
@@ -82,7 +83,7 @@ def run(I,
 
     if plot:
         I_est = ensure_np_array( xp.abs(E_est_2d)**2 )
-        plot_pwp(probes, E_probes, diff_ims, E_est_2d, vmin=np.max(I_est)/1e4, vmax=np.max(I_est))
+        plot_pwp(probes, E_probes, diff_ims, E_est_2d, vmin=np.max(I_est)/1e4, vmax=np.max(I_est), fname=plot_fname)
     if plot_est:
         I_est = xp.abs(E_est_2d)**2
         P_est = xp.angle(E_est_2d)
@@ -97,7 +98,7 @@ def run(I,
     else:
         return E_est_2d
 
-def plot_pwp(probes, E_probes, diff_ims, E_est, vmin=1e-9, vmax=1e-4):
+def plot_pwp(probes, E_probes, diff_ims, E_est, vmin=1e-9, vmax=1e-4, fname=None):
     probes = ensure_np_array(probes)
     E_probes = ensure_np_array(E_probes)
     diff_ims = ensure_np_array(diff_ims)
@@ -172,6 +173,8 @@ def plot_pwp(probes, E_probes, diff_ims, E_est, vmin=1e-9, vmax=1e-4):
     ax.set_position([0.55, 0.025, 0.3, 0.3]) # [left, bottom, width, height]
 
     plt.show()
+
+    if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
 
 
 
