@@ -49,32 +49,39 @@ class MODEL():
         self.oversample = 2.048
         self.N = int(self.npix*self.oversample)
 
-        self.dm_pxscl = self.dm_beam_diam.to_value(u.m)/self.npix
-        self.lyot_pxscl = self.lyot_pupil_diam.to_value(u.m)/self.npix
-
+        self.dm_pxscl = self.dm_beam_diam.to_value(u.m) / self.npix
         self.dm_shift = dm_shift
-        self.lyot_shift = lyot_shift
         self.dm_shift_pix = self.dm_shift.to_value(u.m) / self.dm_pxscl
-        self.lyot_shift_pix = self.lyot_shift.to_value(u.m) / self.lyot_pxscl
 
-        pwf = poppy.FresnelWavefront(beam_radius=self.dm_beam_diam/2, npix=self.npix, oversample=1) # pupil wavefront
-        self.APERTURE = poppy.CircularAperture(radius=self.dm_beam_diam/2).get_transmission(pwf)
-        self.APMASK = self.APERTURE>0
-        self.LYOT = poppy.CircularAperture(radius=self.lyot_ratio*self.dm_beam_diam/2).get_transmission(pwf)
-        self.LYOT = xcipy.ndimage.shift(self.LYOT, np.flip(self.lyot_shift_pix), order=1)
-        self.AMP = xp.ones((self.npix,self.npix))
-        self.OPD = xp.zeros((self.npix,self.npix))
+        self.lyot_pxscl = self.lyot_pupil_diam.to_value(u.m) / self.npix
+        self.lyot_shift = lyot_shift
+        self.lyot_shift_pix = self.lyot_shift.to_value(u.m) / self.lyot_pxscl
 
         self.det_rotation = 0
         self.flip_dm = False
         self.reverse_lyot = False
         self.flip_lyot = False
 
+        pwf = poppy.FresnelWavefront(beam_radius=self.dm_beam_diam/2, npix=self.npix, oversample=1) # pupil wavefront
+        self.APERTURE = poppy.CircularAperture(radius=self.dm_beam_diam/2).get_transmission(pwf)
+        self.APMASK = self.APERTURE>0
+
+        self.AMP = xp.ones((self.npix,self.npix))
+        self.OPD = xp.zeros((self.npix,self.npix))
+
+        self.LYOT = poppy.CircularAperture(radius=self.lyot_ratio*self.dm_beam_diam/2).get_transmission(pwf)
+        self.LYOT = xcipy.ndimage.shift(self.LYOT, np.flip(self.lyot_shift_pix), order=1)
+
         self.Nact = 34
         self.dm_shape = (self.Nact, self.Nact)
         self.act_spacing = 300e-6*u.m
         self.inf_sampling = self.act_spacing.to_value(u.m)/self.dm_pxscl
-        self.inf_fun = dm.make_gaussian_inf_fun(act_spacing=self.act_spacing, sampling=self.inf_sampling, coupling=0.15, Nact=self.Nact+2)
+        self.inf_fun = dm.make_gaussian_inf_fun(
+            act_spacing=self.act_spacing, 
+            sampling=self.inf_sampling, 
+            coupling=0.15, 
+            Nact=self.Nact+2,
+        )
         self.Nsurf = self.inf_fun.shape[0]
 
         y,x = (xp.indices((self.Nact, self.Nact)) - self.Nact//2 + 1/2)
@@ -82,6 +89,7 @@ class MODEL():
         self.dm_mask = r<(self.Nact/2 + 1/2)
         self.dm_mask[25,21] = False
         self.Nacts = int(self.dm_mask.sum())
+
 
         self.inf_fun_fft = xp.fft.fftshift(xp.fft.fft2(xp.fft.ifftshift(self.inf_fun,)))
         # DM command coordinates
@@ -122,10 +130,17 @@ class MODEL():
         self.use_vortex = True
         self.dm_command = xp.zeros((self.Nact, self.Nact))
     
-    def forward(self, actuators, wavelength=633e-9, 
-                use_vortex=True, return_ints=False, 
-                plot=False, fancy_plot=False, 
-                fancy_plot_fname=None):
+    def forward(
+            self, 
+            actuators, 
+            wavelength=633e-9, 
+            use_vortex=True, 
+            return_ints=False, 
+            plot=False,
+            fancy_plot=False, 
+            fancy_plot_fname=None,
+        ):
+
         dm_command = xp.zeros((self.Nact,self.Nact))
         dm_command[self.dm_mask] = xp.array(actuators)
         mft_command = self.Mx@dm_command@self.My
@@ -163,7 +178,6 @@ class MODEL():
 
         if self.reverse_lyot: E_LP = xp.rot90(xp.rot90(E_LP))
         if self.flip_lyot: E_LP = xp.fliplr(E_LP)
-        # E_LP = xcipy.ndimage.shift(E_LP, np.flip(self.lyot_shift_pix), order=5)
 
         E_LS = utils.pad_or_crop(self.LYOT, self.N) * E_LP
         if plot: imshow2(xp.abs(E_LS), xp.angle(E_LS), 'After Lyot Stop WF', npix=1.5*self.npix, cmap2='twilight')
@@ -215,7 +229,15 @@ class MODEL():
             im += xp.abs( fpwf )**2 / Nwaves
         return im
 
-def val_and_grad(del_acts, M, rmad_vars, verbose=False, plot=False, fancy_plot=False, fancy_plot_fname=None):
+def val_and_grad(
+        del_acts, 
+        M, 
+        rmad_vars, 
+        verbose=False, 
+        plot=False, 
+        fancy_plot=False, 
+        fancy_plot_fname=None,
+    ):
     # Convert array arguments into correct types
     del_acts = xp.array(del_acts)
     del_acts_waves = del_acts/M.wavelength_c
@@ -233,7 +255,7 @@ def val_and_grad(del_acts, M, rmad_vars, verbose=False, plot=False, fancy_plot=F
     E_FP_delDM = M.forward(current_acts + del_acts, wavelength, use_vortex=True) # make sure to do the array indexing
     E_DM = E_FP_delDM - E_FP_NOM
 
-    # compute the cost function
+    # Compute the cost function
     delE = E_ab + E_DM
     delE_vec = delE[control_mask] # make sure to do array indexing
     J_delE = delE_vec.dot(delE_vec.conjugate()).real
@@ -404,15 +426,15 @@ def fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_m
     title_fz = 26
 
     ax = fig.add_subplot(gs[0, 0])
-    # ax.imshow(np.abs(dJ_dE_DM)**2, cmap='magma', norm=LogNorm(vmin=1e-6))
-    ax.imshow(np.abs(dJ_dE_DM)**2 * control_mask, cmap='magma', norm=LogNorm(vmin=1e-6))
+    ax.imshow(np.abs(dJ_dE_DM)**2, cmap='magma', norm=LogNorm(vmin=1e-6))
+    # ax.imshow(np.abs(dJ_dE_DM)**2 * control_mask, cmap='magma', norm=LogNorm(vmin=1e-6))
     ax.set_title(r'$| \frac{\partial J}{\partial E_{DM}} |^2$', fontsize=title_fz)
     ax.set_xticks([])
     ax.set_yticks([])
 
     ax = fig.add_subplot(gs[1, 0])
-    # ax.imshow(np.angle(dJ_dE_DM), cmap='twilight',)
-    ax.imshow(np.angle(dJ_dE_DM) * control_mask, cmap='twilight',)
+    ax.imshow(np.angle(dJ_dE_DM), cmap='twilight',)
+    # ax.imshow(np.angle(dJ_dE_DM) * control_mask, cmap='twilight',)
     ax.set_title(r'$\angle \frac{\partial J}{\partial E_{DM}} $', fontsize=title_fz)
     ax.set_xticks([])
     ax.set_yticks([])

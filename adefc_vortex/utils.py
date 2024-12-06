@@ -184,6 +184,13 @@ def centroid(arr, rounded=False):
     yc = round(weighted_sum_y/total_sum_y) if rounded else weighted_sum_y/total_sum_y
     return (yc, xc)
 
+def create_zernike_modes(pupil_mask, nmodes=15, remove_modes=0):
+    if remove_modes>0:
+        nmodes += remove_modes
+    zernikes = poppy.zernike.arbitrary_basis(pupil_mask, nterms=nmodes, outside=0)[remove_modes:]
+
+    return zernikes
+
 def make_f(h=10, w=6, shift=(0,0), Nact=34):
     f_command = xp.zeros((Nact, Nact))
 
