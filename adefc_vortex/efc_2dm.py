@@ -117,6 +117,7 @@ def run_bb(
         control_mask,
         control_waves,
         data,
+        reg_cond,
         pwp_params=None,
         Nitr=3, 
         gain=0.5, 
@@ -164,6 +165,7 @@ def run_bb(
         data['del_dm1_commands'].append(copy.copy(del_dm1))
         data['dm2_commands'].append(copy.copy(total_dm2))
         data['del_dm2_commands'].append(copy.copy(del_dm2))
+        data['reg_conds'].append(copy.copy(reg_cond))
         print(i)
         imshow3(del_dm1, del_dm2, image_ni, 
                 f'$\delta$DM1', f'$\delta$DM2', 
