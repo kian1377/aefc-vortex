@@ -74,7 +74,7 @@ class SCOOBI():
                  dm_ref=np.zeros((34,34)),
                  npsf=150,
                 ):
-        self.wavelength_c = 633e-9*u.m
+        self.wavelength_c = 633e-9
         
         self.SCICAM = ImageStream(scicam_channel) if scicam_channel is not None else None
         self.LOCAM = ImageStream(locam_channel) if locam_channel is not None else None
@@ -100,11 +100,11 @@ class SCOOBI():
         x,y = np.meshgrid(xx,xx)
         r = np.sqrt(x**2 + y**2)
         self.dm_mask = r<10.5/2
-        self.dm_pupil_mask = r<9.1/2
+        self.dm_pupil_mask = r<9.6/2
 
         # Init camera settings
         self.psf_pixelscale = 4.6e-6*u.m/u.pix
-        self.psf_pixelscale_lamD = 0.307
+        self.psf_pixelscale_lamDc = 0.307
         self.nbits = 16
         self.NSCICAM = 1
         self.NLOCAM = 1
@@ -139,23 +139,6 @@ class SCOOBI():
         self.atten = value
         print(f'Set the fiber attenuation to {value:.1f}')
 
-    def set_nsv_exp_time(self, exp_time, client, delay=0.25):
-        if exp_time<1e-4:
-            print('Minimum exposure time is 1E-4 seconds. Setting exposure time to minimum.')
-            exp_time = 1e-4
-        client.wait_for_properties(['nsv571.exptime'])
-        client['nsv571.exptime.target'] = exp_time
-        time.sleep(delay)
-        self.texp_locam = exp_time
-        print(f'Set the NSV571 exposure time to {self.texp_locam:.2e}s')
-
-    def set_nsv_gain(self, gain, client, delay=0.25):
-        client.wait_for_properties(['nsv571.emgain'])
-        client['nsv571.emgain.target'] = gain
-        time.sleep(delay)
-        self.gain_locam = gain
-        print(f'Set the NSV571 gain to {self.texp_locam:.2e}s')
-        
     def set_zwo_exp_time(self, exp_time, client, delay=0.25):
         if exp_time<3.2e-5:
             print('Minimum exposure time is 3.2E-5 seconds. Setting exposure time to minimum.')
