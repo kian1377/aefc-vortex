@@ -41,7 +41,7 @@ def run(I,
         ):
     
     starting_itr = len(data['images'])
-    total_command = copy.copy(data['commands'][-1]) if len(data['commands'])>0 else xp.zeros((M.Nact,M.Nact))
+    total_command = copy.copy(data['commands'][-1]) if len(data['commands'])>0 else xp.zeros((I.Nact,I.Nact))
 
     del_command = xp.zeros((I.Nact,I.Nact)) # array to fill with actuator solutions
     Nacts = control_matrix.shape[0]
@@ -51,7 +51,7 @@ def run(I,
         
         if pwp_params is not None: 
             print('Running PWP ...')
-            E_ab = pwp.run(I, M, **pwp_params)
+            E_ab = pwp.run(I, **pwp_params)
         else:
             print('Computing E-field with model ...')
             E_ab = I.calc_wf()
