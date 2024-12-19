@@ -51,7 +51,7 @@ def run(I,
         
         if pwp_params is not None: 
             print('Running PWP ...')
-            E_ab = pwp.run(I, **pwp_params)
+            E_ab = pwp.run(I, M, **pwp_params)
         else:
             print('Computing E-field with model ...')
             E_ab = I.calc_wf()
