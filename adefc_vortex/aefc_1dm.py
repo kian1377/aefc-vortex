@@ -30,6 +30,7 @@ def run(I,
     del_command = xp.zeros((M.Nact,M.Nact)) # array to fill with actuator solutions
     del_acts0 = np.zeros(M.Nacts) # initial guess is always just zeros
     for i in range(Nitr):
+        print(f'Running iteration {starting_itr+i:d}')
 
         if pwp_params is not None: 
             print('Running PWP ...')
@@ -38,7 +39,6 @@ def run(I,
             print('Computing E-field with model ...')
             E_ab = I.calc_wf()
         
-        print('Computing EFC command with L-BFGS')
         current_acts = total_command[M.dm_mask]
         E_FP_NOM, E_EP, DM_PHASOR = M.forward(current_acts, I.wavelength_c, use_vortex=True, return_ints=True)
         rmad_vars= {

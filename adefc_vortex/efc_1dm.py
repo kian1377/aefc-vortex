@@ -34,6 +34,7 @@ def compute_jacobian(M, control_mask, amp=1e-9, current_acts=None, wavelength=No
 def run(I, 
         control_matrix,
         control_mask,
+        dm_mask,
         data,
         pwp_params=None,
         Nitr=3, 
@@ -59,7 +60,7 @@ def run(I,
         E_ab_vec[::2] = E_ab[control_mask].real
         E_ab_vec[1::2] = E_ab[control_mask].imag
         del_acts = - gain * control_matrix.dot(E_ab_vec)
-        del_command[I.dm_mask] = del_acts[:Nacts]
+        del_command[dm_mask] = del_acts[:Nacts]
         total_command += del_command
         I.set_dm(total_command)
 
@@ -73,10 +74,13 @@ def run(I,
         data['commands'].append(copy.copy(total_command))
         data['del_commands'].append(copy.copy(del_command))
 
-        imshow3(del_command, total_command, image_ni, 
-                f'$\delta$DM1', f'$\delta$DM2', 
-                f'Iteration {starting_itr + i:d} Image\nMean NI = {mean_ni:.3e}',
-                cmap1='viridis', cmap2='viridis', 
-                pxscl3=I.psf_pixelscale_lamDc, lognorm3=True, vmin3=1e-10)
+        imshow3(
+            del_command, total_command, image_ni, 
+            f'$\delta$DM1', 
+            f'$\delta$DM2', 
+            f'Iteration {starting_itr + i:d} Image\nMean NI = {mean_ni:.3e}',
+            cmap1='viridis', cmap2='viridis', 
+            pxscl3=I.psf_pixelscale_lamDc, lognorm3=True, vmin3=1e-9,
+        )
 
     return data
