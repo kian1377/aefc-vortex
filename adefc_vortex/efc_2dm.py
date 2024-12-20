@@ -114,10 +114,10 @@ def calc_wfs(I, waves, control_mask, plot=False):
 def run_bb(
         I, 
         control_matrix,
+        reg_cond,
         control_mask,
         control_waves,
         data,
-        reg_cond,
         pwp_params=None,
         Nitr=3, 
         gain=0.5, 
