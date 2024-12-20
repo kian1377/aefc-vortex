@@ -435,8 +435,8 @@ def plot_both_data(efc_data, aefc_data,
     ax[1].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
 
     ax[2].set_title('Mean Contrast per Iteration', fontsize=14)
-    ax[2].semilogy(mean_nis_efc, label='EFC')
     ax[2].semilogy(mean_nis_aefc, label='aEFC')
+    ax[2].semilogy(mean_nis_efc, label='EFC')
     ax[2].grid()
     ax[2].set_xlabel('Iteration Number', fontsize=12, )
     ax[2].set_ylabel('Mean Contrast', fontsize=14, labelpad=1)
@@ -503,8 +503,8 @@ def plot_both_with_reg_conds(
 
     xticks = np.arange(0, Nitr_efc,2) if xticks is None else xticks
 
-    ax[0,1].semilogy(mean_nis_efc, label='EFC')
     ax[0,1].semilogy(mean_nis_aefc, label='aEFC')
+    ax[0,1].semilogy(mean_nis_efc, label='EFC')
     ax[0,1].set_title('Mean Contrast per Iteration', fontsize=14)
     ax[0,1].grid()
     ax[0,1].set_xlabel('Iteration Number', fontsize=12, )
@@ -520,7 +520,7 @@ def plot_both_with_reg_conds(
     ax1.tick_params(axis='y', labelcolor='#1f77b4')
     ax2 = ax1.twinx()
     ax2.plot(np.linspace(1, Nitr_efc-1, Nitr_efc-1), efc_reg_conds, '-o', color='#ff7f0e',)
-    ax2.set_ylabel('EFC $\\beta$  Values', fontsize=14, rotation=-90, labelpad = 25)
+    ax2.set_ylabel('EFC $\\beta$  values', fontsize=14, rotation=-90, labelpad = 25)
     ax2.tick_params(axis='y', labelcolor='#ff7f0e')
     ax2.set_ylim([-3.5, -0.5])
     ax2.set_xticks(xticks)
