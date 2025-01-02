@@ -524,7 +524,7 @@ def plot_both_with_reg_conds(
     ax2.tick_params(axis='y', labelcolor='#ff7f0e')
     ax2.set_ylim([-3.5, -0.5])
     ax2.set_xticks(xticks)
-    ax2.grid(axis='x')
+    ax[1,1].grid(axis='x')
     # ax[1,1].legend()
 
     ax1.set_xlabel('Iteration Number', fontsize=12, )

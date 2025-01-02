@@ -31,7 +31,10 @@ def acts_to_command(acts, dm_mask):
     return command
 
 class MODEL():
-    def __init__(self):
+    def __init__(
+            self,
+            npix=1000,
+        ):
 
         # initialize physical parameters
         self.wavelength_c = 650e-9
@@ -50,7 +53,7 @@ class MODEL():
         self.Imax_ref = 1
 
         # initialize sampling parameters and load masks
-        self.npix = 1000
+        self.npix = npix
         self.oversample = 4.096
         self.N = int(self.npix*self.oversample)
 
