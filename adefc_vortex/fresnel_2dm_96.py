@@ -26,19 +26,20 @@ print(os.path.dirname(__file__))
 
 class CORO():
 
-    def __init__(self,
-                 dm1_ref=xp.zeros((96,96)),
-                 dm2_ref=xp.zeros((96,96)),
-                 d_dm1_dm2=700*u.mm, 
-                 dm1_shift=np.array([0,0])*u.m,
-                 dm2_shift=np.array([0,0])*u.m,
-                 dm1_gains=xp.ones((96,96)),
-                 dm2_gains=xp.ones((96,96)),
-                 lyot_shift=np.array([0,0])*u.m,
-                 inf_fun_coupling=0.15,
-                 use_opds=False,
-                 use_aps=False,
-                ):
+    def __init__(
+            self,
+            dm1_ref=xp.zeros((96,96)),
+            dm2_ref=xp.zeros((96,96)),
+            d_dm1_dm2=700*u.mm, 
+            dm1_shift=np.array([0,0])*u.m,
+            dm2_shift=np.array([0,0])*u.m,
+            dm1_gains=xp.ones((96,96)),
+            dm2_gains=xp.ones((96,96)),
+            lyot_shift=np.array([0,0])*u.m,
+            inf_fun_coupling=0.15,
+            use_opds=False,
+            use_aps=False,
+        ):
         
         self.wavelength_c = 650e-9
         self.wavelength = self.wavelength_c
