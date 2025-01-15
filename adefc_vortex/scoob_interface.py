@@ -85,7 +85,8 @@ class SCOOBI():
 
         # Init all DM settings
         self.Nact = 34
-        self.Nacts = 951 # accounting for the bad actuator
+        # self.Nacts = 951 # accounting for the bad actuator
+        self.Nacts = 952 # accounting for the bad actuator
         self.dm_shape = (self.Nact,self.Nact)
         self.act_spacing = 300e-6*u.m
         self.dm_active_diam = 10.2*u.mm

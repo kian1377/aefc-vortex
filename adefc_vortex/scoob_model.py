@@ -87,7 +87,7 @@ class MODEL():
         y,x = (xp.indices((self.Nact, self.Nact)) - self.Nact//2 + 1/2)
         r = xp.sqrt(x**2 + y**2)
         self.dm_mask = r<(self.Nact/2 + 1/2)
-        self.dm_mask[25,21] = False
+        # self.dm_mask[25,21] = False
         self.Nacts = int(self.dm_mask.sum())
 
 
