@@ -18,6 +18,7 @@ def run(I,
         probes, probe_amp, 
         wavelength, 
         reg_cond=1e-3, 
+        gain=1,
         Ndms=1,
         plot=False,
         plot_est=False,
@@ -79,7 +80,7 @@ def run(I,
         E_est[i] = est[0] + 1j*est[1]
         
     E_est_2d = xp.zeros((I.npsf, I.npsf), dtype=xp.complex128)
-    E_est_2d[control_mask] = E_est
+    E_est_2d[control_mask] = gain * E_est
 
     if plot:
         I_est = ensure_np_array( xp.abs(E_est_2d)**2 )
