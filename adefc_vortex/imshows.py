@@ -333,6 +333,7 @@ def plot_data_with_ref(
         im2vmin=1e-9, im2vmax=1e-4, 
         vmin=1e-9, vmax=1e-4, 
         xticks=None,
+        exp_name='',
         fname=None,
     ):
     ims = ensure_np_array( xp.array(data['images']) ) 
@@ -361,7 +362,7 @@ def plot_data_with_ref(
     ax[0].set_position([0, 0, w, w]) # [left, bottom, width, height]
 
     im2 = ax[1].imshow( best_im, norm=LogNorm(vmax=im2vmax, vmin=im2vmin), cmap='magma', extent=extent)
-    ax[1].set_title(f'Best Iteration:\nMean Contrast = {mean_nis[ibest]:.2e}', fontsize=14)
+    ax[1].set_title('Best Iteration' + exp_name + f':\nMean Contrast = {mean_nis[ibest]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[1])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im2, cax=cax,)
@@ -372,7 +373,7 @@ def plot_data_with_ref(
     ax[0].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
     ax[1].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
 
-    ax[2].set_title('Mean Contrast per Iteration', fontsize=14)
+    ax[2].set_title('Mean Contrast per Iteration' + exp_name, fontsize=14)
     ax[2].semilogy(mean_nis, label='3.6% Bandpass')
     ax[2].grid()
     ax[2].set_xlabel('Iteration Number', fontsize=12, )
