@@ -71,8 +71,10 @@ def run(I,
     E_est = xp.zeros(Nmask, dtype=xp.complex128)
     for i in range(Nmask):
         delI = diff_ims[:, control_mask][:, i]
-        H = 4*xp.array([E_probes[:, control_mask][:, i].real, 
-                        E_probes[:, control_mask][:, i].imag]).T # Dimensions are 2 X N_probes
+        H = 4*xp.array(
+            [E_probes[:, control_mask][:, i].real, 
+             E_probes[:, control_mask][:, i].imag]
+        ).T # Dimensions are 2 X N_probes
         Hinv = xp.linalg.pinv(H.T@H, reg_cond)@H.T
     
         est = Hinv.dot(delI)

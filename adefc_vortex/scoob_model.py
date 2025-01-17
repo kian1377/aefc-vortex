@@ -22,13 +22,14 @@ def acts_to_command(acts, dm_mask):
     return command
 
 class MODEL():
-    def __init__(self, 
-                 dm_beam_diam=9.2*u.mm,
-                 lyot_pupil_diam=9.2*u.mm,
-                 lyot_stop_diam=8.6*u.mm,
-                 dm_shift=np.array([0, 0])*u.mm,
-                 lyot_shift=np.array([0, 0])*u.mm,
-                 ):
+    def __init__(
+            self, 
+            dm_beam_diam=9.2*u.mm,
+            lyot_pupil_diam=9.2*u.mm,
+            lyot_stop_diam=8.6*u.mm,
+            dm_shift=np.array([0, 0])*u.mm,
+            lyot_shift=np.array([0, 0])*u.mm,
+        ):
 
         # initialize physical parameters
         self.wavelength_c = 633e-9
@@ -89,7 +90,6 @@ class MODEL():
         self.dm_mask = r<(self.Nact/2 + 1/2)
         # self.dm_mask[25,21] = False
         self.Nacts = int(self.dm_mask.sum())
-
 
         self.inf_fun_fft = xp.fft.fftshift(xp.fft.fft2(xp.fft.ifftshift(self.inf_fun,)))
         # DM command coordinates
@@ -155,7 +155,9 @@ class MODEL():
         E_EP = utils.pad_or_crop(self.APERTURE.astype(xp.complex128), self.N) * WFE / xp.sqrt(self.Imax_ref)
         if plot: imshow2(xp.abs(E_EP), xp.angle(E_EP), 'EP WF', npix=1.5*self.npix, cmap2='twilight')
 
+        # E_EP = xcipy.ndimage.shift(E_EP, np.flip(-self.dm_shift_pix), order=5)
         E_DM = E_EP * utils.pad_or_crop(DM_PHASOR, self.N)
+        # E_DM = xcipy.ndimage.shift(E_DM, np.flip(self.dm_shift_pix), order=5)
         if plot: imshow2(xp.abs(E_DM), xp.angle(E_DM), 'After DM WF', npix=1.5*self.npix, cmap2='twilight')
 
         if use_vortex:
@@ -193,7 +195,7 @@ class MODEL():
                                fname=fancy_plot_fname)
 
         if return_ints:
-            return E_FP, E_EP, DM_PHASOR
+            return E_FP, E_EP, DM_PHASOR, E_DM, E_LP, E_LS
         else:
             return E_FP
         

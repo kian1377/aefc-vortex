@@ -40,7 +40,7 @@ def run(I,
             E_ab = I.calc_wf()
         
         current_acts = total_command[M.dm_mask]
-        E_FP_NOM, E_EP, DM_PHASOR = M.forward(current_acts, I.wavelength_c, use_vortex=True, return_ints=True)
+        E_FP_NOM, E_EP, DM_PHASOR, _, _, _ = M.forward(current_acts, I.wavelength_c, use_vortex=True, return_ints=True)
         rmad_vars= {
             'E_ab': E_ab,
             'current_acts': current_acts,
