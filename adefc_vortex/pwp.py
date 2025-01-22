@@ -86,7 +86,7 @@ def run(I,
 
     if plot:
         I_est = ensure_np_array( xp.abs(E_est_2d)**2 )
-        plot_pwp(probes, E_probes, diff_ims, E_est_2d, vmin=np.max(I_est)/1e4, vmax=np.max(I_est), fname=plot_fname)
+        plot_pwp(probes, E_probes, diff_ims, E_est_2d, vmin=np.max(I_est)/1e3, vmax=np.max(I_est), fname=plot_fname)
     if plot_est:
         I_est = xp.abs(E_est_2d)**2
         P_est = xp.angle(E_est_2d)
@@ -159,21 +159,25 @@ def plot_pwp(probes, E_probes, diff_ims, E_est, vmin=1e-9, vmax=1e-4, fname=None
     ax = fig.add_subplot(gs[2, :2])
     im = ax.imshow(np.abs(E_est)**2, cmap='magma', norm=LogNorm(vmin=vmin, vmax=vmax))
     ax.set_title('Final Estimated Intensity: ' + r'$|E_{ab}|^2$', fontsize=title_fz+4)
+    ax.set_xlabel('X [pixels]', fontsize=14, labelpad=8)
+    ax.set_ylabel('Y [pixels]', fontsize=14, labelpad=8)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im, cax=cax,)
-    cbar.ax.tick_params(labelsize=14)
-    cbar.ax.set_ylabel('NI', rotation=0, labelpad=10, fontsize=14)
-    ax.set_position([0.2, 0.025, 0.3, 0.3]) # [left, bottom, width, height]
+    cbar.ax.tick_params(labelsize=16)
+    cbar.ax.set_ylabel('NI', rotation=0, labelpad=15, fontsize=14)
+    ax.set_position([0.21, 0.025, 0.3, 0.3]) # [left, bottom, width, height]
 
     ax = fig.add_subplot(gs[2, 2:])
     im = ax.imshow(np.angle(E_est), cmap='twilight',)
     ax.set_title('Final Estimated Phase: ' + r'$\angle E_{ab}$', fontsize=title_fz+4)
+    ax.set_xlabel('X [pixels]', fontsize=14, labelpad=8)
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im, cax=cax)
+    cbar.ax.set_ylabel('rad', rotation=0, labelpad=15, fontsize=14)
     cbar.ax.tick_params(labelsize=14)
-    ax.set_position([0.55, 0.025, 0.3, 0.3]) # [left, bottom, width, height]
+    ax.set_position([0.525, 0.025, 0.3, 0.3]) # [left, bottom, width, height]
 
     plt.show()
 

@@ -54,9 +54,22 @@ def move_block_out(client, delay=2):
     client['stagelinear.presetName.block_out'] = purepyindi.SwitchState.ON
     time.sleep(delay)
 
+def set_zwo_bin(bin, client, delay=0.25):
+    # update roi parameters
+    client.wait_for_properties(['camsci.roi_region_bin_x' ,'camsci.roi_region_bin_y', 
+                                'camsci.roi_set'])
+    client['camsci.roi_region_bin_x.target'] = bin
+    client['camsci.roi_region_bin_y.target'] = bin
+    time.sleep(delay)
+    client['camsci.roi_set.request'] = purepyindi.SwitchState.ON
+    time.sleep(delay)
+
 def set_zwo_roi(xc, yc, npix, client, delay=0.25):
     # update roi parameters
-    client.wait_for_properties(['camsci.roi_region_x', 'camsci.roi_region_y', 'camsci.roi_region_h' ,'camsci.roi_region_w', 'camsci.roi_set'])
+    client.wait_for_properties(['camsci.roi_region_x', 'camsci.roi_region_y', 
+                                'camsci.roi_region_h' ,'camsci.roi_region_w', 
+                                # 'camsci.roi_region_bin_x' ,'camsci.roi_region_bin_y', 
+                                'camsci.roi_set'])
     client['camsci.roi_region_x.target'] = xc
     client['camsci.roi_region_y.target'] = yc
     client['camsci.roi_region_h.target'] = npix
