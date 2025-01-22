@@ -254,11 +254,11 @@ def val_and_grad(
     r_cond = rmad_vars['r_cond']
 
     # Compute E_DM using the forward DM model
-    E_FP_delDM = M.forward(current_acts + del_acts, wavelength, use_vortex=True) # make sure to do the array indexing
-    E_DM = E_FP_delDM - E_FP_NOM
+    E_FP_with_delA = M.forward(current_acts + del_acts, wavelength, use_vortex=True) # make sure to do the array indexing
+    E_delA = E_FP_with_delA - E_FP_NOM
 
     # Compute the cost function
-    delE = E_ab + E_DM
+    delE = E_ab + E_delA
     delE_vec = delE[control_mask] # make sure to do array indexing
     J_delE = delE_vec.dot(delE_vec.conjugate()).real
     J_c = r_cond * del_acts_waves.dot(del_acts_waves)
@@ -273,11 +273,11 @@ def val_and_grad(
     # Compute the gradient with the adjoint model
     delE_masked = control_mask * delE # still a 2D array
     delE_masked = xcipy.ndimage.rotate(delE_masked, -M.det_rotation, reshape=False, order=5)
-    dJ_dE_DM = 2 * delE_masked / E_ab_l2norm
-    if plot: imshow2(xp.abs(dJ_dE_DM)**2, xp.angle(dJ_dE_DM), 'RMAD DM E-Field', lognorm1=True, vmin1=xp.max(xp.abs(dJ_dE_DM)**2)/1e3, cmap2='twilight')
+    dJ_dE_delA = 2 * delE_masked / E_ab_l2norm
+    if plot: imshow2(xp.abs(dJ_dE_delA)**2, xp.angle(dJ_dE_delA), 'RMAD DM E-Field', lognorm1=True, vmin1=xp.max(xp.abs(dJ_dE_DM)**2)/1e3, cmap2='twilight')
 
     psf_pixelscale_lamD = M.psf_pixelscale_lamDc * M.wavelength_c/wavelength
-    dJ_dE_LS = props.mft_reverse(dJ_dE_DM, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
+    dJ_dE_LS = props.mft_reverse(dJ_dE_delA, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
     if plot: imshow2(xp.abs(dJ_dE_LS), xp.angle(dJ_dE_LS), 'RMAD Lyot Stop', npix=1.5*M.npix, cmap2='twilight')
 
     dJ_dE_LP = dJ_dE_LS * utils.pad_or_crop(M.LYOT, M.N)
@@ -316,7 +316,7 @@ def val_and_grad(
     
     dJ_dA = dJ_dA[M.dm_mask].real + xp.array( r_cond * 2*del_acts_waves )
 
-    if fancy_plot: fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, M.dm_mask, fname=fancy_plot_fname)
+    if fancy_plot: fancy_plot_adjoint(dJ_dE_delA, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, M.dm_mask, fname=fancy_plot_fname)
     
     return ensure_np_array(J), ensure_np_array(dJ_dA)
 
@@ -413,10 +413,10 @@ def fancy_plot_forward(command, E_EP, DM_PHASOR, E_LP, fpwf, npix=1000, waveleng
     plt.subplots_adjust(hspace=-0.3)
     if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
 
-def fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, dm_mask, npix=1000, fname=None):
+def fancy_plot_adjoint(dJ_dE_delA, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, dm_mask, npix=1000, fname=None):
 
     control_mask = ensure_np_array(control_mask)
-    dJ_dE_DM = ensure_np_array(dJ_dE_DM)
+    dJ_dE_delA = ensure_np_array(dJ_dE_delA)
     dJ_dE_LP = ensure_np_array(utils.pad_or_crop(dJ_dE_LP, 1.5*npix))
     dJ_dE_PUP = ensure_np_array(utils.pad_or_crop(dJ_dE_PUP, 1.5*npix))
     dJ_dS_DM = ensure_np_array(utils.pad_or_crop(dJ_dS_DM, int(1.5*npix)))
@@ -428,16 +428,16 @@ def fancy_plot_adjoint(dJ_dE_DM, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_m
     title_fz = 26
 
     ax = fig.add_subplot(gs[0, 0])
-    ax.imshow(np.abs(dJ_dE_DM)**2, cmap='magma', norm=LogNorm(vmin=1e-6))
-    # ax.imshow(np.abs(dJ_dE_DM)**2 * control_mask, cmap='magma', norm=LogNorm(vmin=1e-6))
-    ax.set_title(r'$| \frac{\partial J}{\partial E_{DM}} |^2$', fontsize=title_fz)
+    # ax.imshow(np.abs(dJ_dE_DM)**2, cmap='magma', norm=LogNorm(vmin=1e-6))
+    ax.imshow(np.abs(dJ_dE_delA)**2 * control_mask, cmap='magma', norm=LogNorm(vmin=1e-6))
+    ax.set_title(r'$| \frac{\partial J}{\partial E_{\delta A}} |^2$', fontsize=title_fz)
     ax.set_xticks([])
     ax.set_yticks([])
 
     ax = fig.add_subplot(gs[1, 0])
-    ax.imshow(np.angle(dJ_dE_DM), cmap='twilight',)
-    # ax.imshow(np.angle(dJ_dE_DM) * control_mask, cmap='twilight',)
-    ax.set_title(r'$\angle \frac{\partial J}{\partial E_{DM}} $', fontsize=title_fz)
+    # ax.imshow(np.angle(dJ_dE_DM), cmap='twilight',)
+    ax.imshow(np.angle(dJ_dE_delA) * control_mask, cmap='twilight',)
+    ax.set_title(r'$\angle \frac{\partial J}{\partial E_{\delta A}} $', fontsize=title_fz)
     ax.set_xticks([])
     ax.set_yticks([])
 

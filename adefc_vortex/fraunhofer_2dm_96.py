@@ -259,11 +259,11 @@ def val_and_grad(
     E_ab_l2norm = E_ab[control_mask].dot(E_ab[control_mask].conjugate()).real
 
     # Compute E_dm using the forward DM model
-    E_FP_delDMs = M.forward(current_acts+del_acts, wavelength, use_vortex=True) # make sure to do the array indexing
-    E_DMs = E_FP_delDMs - E_FP_NOM
+    E_FP_with_delA = M.forward(current_acts + del_acts, wavelength, use_vortex=True) # make sure to do the array indexing
+    E_delA = E_FP_with_delA - E_FP_NOM
 
     # compute the cost function
-    delE = E_ab + E_DMs
+    delE = E_ab + E_delA
     delE_vec = delE[control_mask] # make sure to do array indexing
     J_delE = delE_vec.dot(delE_vec.conjugate()).real
     J_c = r_cond * del_acts_waves.dot(del_acts_waves)
@@ -276,10 +276,10 @@ def val_and_grad(
 
     # Compute the gradient with the adjoint model
     delE_masked = control_mask * delE # still a 2D array
-    dJ_dE_DMs = 2 * delE_masked / E_ab_l2norm
+    dJ_dE_delA = 2 * delE_masked / E_ab_l2norm
 
     psf_pixelscale_lamD = M.psf_pixelscale_lamDc * M.wavelength_c/wavelength
-    dJ_dE_LS = props.mft_reverse(dJ_dE_DMs, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
+    dJ_dE_LS = props.mft_reverse(dJ_dE_delA, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
     if plot: imshow2(xp.abs(dJ_dE_LS), xp.angle(dJ_dE_LS), 'RMAD Lyot Stop', npix=1.5*M.npix)
 
     dJ_dE_LP = dJ_dE_LS * utils.pad_or_crop(M.LYOT, M.N)
