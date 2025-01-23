@@ -215,6 +215,7 @@ class SCOOBI():
 
         if self.subtract_dark and self.df is not None:
             im -= self.df
+            print(xp.sum(im<0))
             im[im<0] = 0.0
             
         if self.return_ni:
