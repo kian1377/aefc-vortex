@@ -354,7 +354,7 @@ def plot_data_with_ref(
 
     w = 0.225
     im1 = ax[0].imshow(ref_im, norm=LogNorm(vmax=im1vmax, vmin=im1vmin), cmap='magma', extent=extent)
-    ax[0].set_title(f'Reference Image:\nMean Contrast = {mean_nis[0]:.2e}', fontsize=14)
+    ax[0].set_title(f'Initial Image:\nMean Contrast = {mean_nis[0]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[0])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im1, cax=cax)

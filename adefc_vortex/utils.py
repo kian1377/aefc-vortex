@@ -387,7 +387,6 @@ def beta_reg(J, beta=-1):
     rho = xp.diag(JTJ)
     alpha2 = rho.max()
 
-    # control_matrix = xp.matmul( xp.linalg.inv( JTJ + alpha2*10.0**(beta) * xp.eye(sts.shape[0]) ), S.T)
     control_matrix = xp.matmul( xp.linalg.inv( JTJ + alpha2*10.0**(beta) * xp.eye(JTJ.shape[0]) ), J.T)
     return control_matrix
 
