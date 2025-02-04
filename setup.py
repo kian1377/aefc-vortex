@@ -1,13 +1,13 @@
 from setuptools import setup, find_packages
 
 VERSION = '0.1.0' 
-DESCRIPTION = 'Package for running AD-EFC simulations or on SCoOB.'
-LONG_DESCRIPTION = 'Package for running AD-EFC simulations or on SCoOB.'
+DESCRIPTION = 'Package for running adjoint EFC simulations or on SCoOB.'
+LONG_DESCRIPTION = 'Package for running adjoint EFC simulations or on SCoOB.'
 
 # Setting up
 setup(
        # the name must match the folder name 'verysimplemodule'
-        name="adefc_vortex",
+        name="aefc_vortex",
         version=VERSION,
         author="Kian Milani",
         author_email="<kianmilani@arizona.edu>",

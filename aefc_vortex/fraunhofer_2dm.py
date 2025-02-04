@@ -1,8 +1,8 @@
 from .math_module import xp, xcipy, ensure_np_array
-from adefc_vortex import utils
-from adefc_vortex.imshows import imshow1, imshow2, imshow3
-from adefc_vortex import dm
-from adefc_vortex import props
+from aefc_vortex import utils
+from aefc_vortex.imshows import imshow1, imshow2, imshow3
+from aefc_vortex import dm
+from aefc_vortex import props
 
 import numpy as np
 import astropy.units as u
@@ -31,29 +31,26 @@ def acts_to_command(acts, dm_mask):
     return command
 
 class MODEL():
-    def __init__(
-            self,
-            npix=1000,
-        ):
+    def __init__(self):
 
         # initialize physical parameters
         self.wavelength_c = 650e-9
 
-        self.dm_beam_diam = 47*u.mm
-        self.d_dm1_dm2 = 700*u.mm
+        self.dm_beam_diam = 9.6*u.mm
+        self.d_dm1_dm2 = 283.569*u.mm
         # self.d_dm1_dm2 = 0*u.mm
-        self.lyot_pupil_diam = 4/5*self.dm_beam_diam
+        self.lyot_pupil_diam = 7.680*u.mm
         self.lyot_stop_diam = 0.9 * self.lyot_pupil_diam
         self.lyot_ratio = 0.9
-        self.control_rad = 96/2 * 47/48 * self.lyot_ratio
-        self.psf_pixelscale_lamDc = 0.347
+        self.control_rad = 34/2 * 9.6/10.2 * self.lyot_ratio
+        self.psf_pixelscale_lamDc = 0.3544
         self.psf_pixelscale_lamD = self.psf_pixelscale_lamDc
-        self.npsf = 256
+        self.npsf = 100
 
         self.Imax_ref = 1
 
         # initialize sampling parameters and load masks
-        self.npix = npix
+        self.npix = 1000
         self.oversample = 4.096
         self.N = int(self.npix*self.oversample)
 
@@ -64,8 +61,8 @@ class MODEL():
         self.AMP = xp.ones((self.npix,self.npix))
         self.OPD = xp.zeros((self.npix,self.npix))
 
-        self.Nact = 96
-        self.act_spacing = 500e-6*u.m
+        self.Nact = 34
+        self.act_spacing = 300e-6*u.m
         self.dm_pxscl = self.dm_beam_diam/(self.npix * u.pix)
         self.inf_sampling = self.act_spacing.to_value(u.m)/self.dm_pxscl.to_value(u.m/u.pix)
         self.inf_fun = dm.make_gaussian_inf_fun(act_spacing=self.act_spacing, sampling=self.inf_sampling, coupling=0.15, Nact=self.Nact+2)
@@ -259,11 +256,11 @@ def val_and_grad(
     E_ab_l2norm = E_ab[control_mask].dot(E_ab[control_mask].conjugate()).real
 
     # Compute E_dm using the forward DM model
-    E_FP_with_delA = M.forward(current_acts + del_acts, wavelength, use_vortex=True) # make sure to do the array indexing
-    E_delA = E_FP_with_delA - E_FP_NOM
+    E_FP_delDMs = M.forward(current_acts+del_acts, wavelength, use_vortex=True) # make sure to do the array indexing
+    E_DMs = E_FP_delDMs - E_FP_NOM
 
     # compute the cost function
-    delE = E_ab + E_delA
+    delE = E_ab + E_DMs
     delE_vec = delE[control_mask] # make sure to do array indexing
     J_delE = delE_vec.dot(delE_vec.conjugate()).real
     J_c = r_cond * del_acts_waves.dot(del_acts_waves)
@@ -276,10 +273,10 @@ def val_and_grad(
 
     # Compute the gradient with the adjoint model
     delE_masked = control_mask * delE # still a 2D array
-    dJ_dE_delA = 2 * delE_masked / E_ab_l2norm
+    dJ_dE_DMs = 2 * delE_masked / E_ab_l2norm
 
     psf_pixelscale_lamD = M.psf_pixelscale_lamDc * M.wavelength_c/wavelength
-    dJ_dE_LS = props.mft_reverse(dJ_dE_delA, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
+    dJ_dE_LS = props.mft_reverse(dJ_dE_DMs, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
     if plot: imshow2(xp.abs(dJ_dE_LS), xp.angle(dJ_dE_LS), 'RMAD Lyot Stop', npix=1.5*M.npix)
 
     dJ_dE_LP = dJ_dE_LS * utils.pad_or_crop(M.LYOT, M.N)
@@ -372,8 +369,7 @@ def val_and_grad_bb(
     mono_rmad_vars = {
         'current_acts':current_acts,
         'control_mask':control_mask,
-        # 'r_cond':0,
-        'r_cond':r_cond,
+        'r_cond':0,
     }
     for i in range(Nwaves):
         mono_rmad_vars.update({'E_ab':copy.copy(E_abs[i])})
@@ -389,31 +385,15 @@ def val_and_grad_bb(
         mono_Js[i] = J_mono
         mono_dJ_dAs[i] = dJ_dA_mono
 
-    # if weights is None: 
-    #     J_bb = np.sum(mono_Js)/Nwaves + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
-    #     dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves + ensure_np_array( r_cond * 2*del_acts_waves )
-    # else: 
-    #     J_bb = np.sum(weights * mono_Js) / np.sum(weights) + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
-    #     dJ_dA_bb = np.sum(weights[:, None] * mono_dJ_dAs, axis=0) / np.sum(weights) + ensure_np_array( r_cond * 2*del_acts_waves )
-    
-    if weights is None: 
-        J_bb = np.sum(mono_Js)/Nwaves
-        dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves
-    else: 
-        J_bb = np.sum(weights * mono_Js) / np.sum(weights)
-        dJ_dA_bb = np.sum(weights[:, None] * mono_dJ_dAs, axis=0) / np.sum(weights)
-    
-    # # Testing beta regularization
-    # dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)
-    # alpha2 = dJ_dA_bb.dot(dJ_dA_bb)
-    # E_abs_norm = E_abs[:,control_mask].ravel().dot(E_abs[:,control_mask].ravel().conjugate()).real
-    # J_acts = alpha2 * 10**(r_cond) * ensure_np_array( del_acts.dot(del_acts) )
-    # print(J_E)
-    # print(J_acts)
-    # dJ_dA_bb = dJ_dA_bb + alpha2 * 10**(r_cond) * 2 * ensure_np_array( del_acts ) 
-    
-    # J_bb = (J_E + J_acts)
+    # imshow1(acts_to_command(dJ_dA_monos[2] - dJ_dA_monos[0], M.dm_mask))
 
+    if weights is None: 
+        J_bb = np.sum(mono_Js)/Nwaves + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
+        dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves + ensure_np_array( r_cond * 2*del_acts_waves )
+    else: 
+        J_bb = np.sum(weights * mono_Js) / np.sum(weights) + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
+        dJ_dA_bb = np.sum(weights[:, None] * mono_dJ_dAs, axis=0) / np.sum(weights) + ensure_np_array( r_cond * 2*del_acts_waves )
+        
     return J_bb, dJ_dA_bb
 
 

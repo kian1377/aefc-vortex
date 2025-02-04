@@ -1,5 +1,5 @@
 from .math_module import xp, xcipy, ensure_np_array
-from adefc_vortex.imshows import imshow1, imshow2, imshow3
+from aefc_vortex.imshows import imshow1, imshow2, imshow3
 
 import numpy as np
 import scipy
