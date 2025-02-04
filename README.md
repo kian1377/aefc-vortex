@@ -1,2 +1,2 @@
-# adefc-vortex
-Repo demonstrating AD-EFC with a vortex coronagraph. 
+# aefc-vortex
+Repo demonstrating adjoint EFC with a vortex coronagraph. 
