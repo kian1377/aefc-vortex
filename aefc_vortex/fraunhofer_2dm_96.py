@@ -338,7 +338,7 @@ def val_and_grad(
     dJ_dA = xp.concatenate([dJ_dA1[M.dm_mask].real, dJ_dA2[M.dm_mask].real]) + xp.array( r_cond * 2*del_acts_waves )
 
     if fancy_plot: 
-        fancy_plot_adjoint(dJ_dE_DMs, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM1, dJ_dS_DM2, dJ_dA1, dJ_dA2, control_mask)
+        fancy_plot_adjoint(dJ_dE_delA, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM1, dJ_dS_DM2, dJ_dA1, dJ_dA2, control_mask)
 
     return ensure_np_array(J), ensure_np_array(dJ_dA)
 
