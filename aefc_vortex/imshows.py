@@ -385,7 +385,6 @@ def plot_data_with_ref(
 
     if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
 
-
 def plot_both_data(efc_data, aefc_data,  
                     im1vmin=1e-9, im1vmax=1e-4, 
                     im2vmin=1e-9, im2vmax=1e-4, 
