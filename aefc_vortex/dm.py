@@ -47,10 +47,6 @@ class DeformableMirror(poppy.AnalyticOpticalElement):
         self.include_reflection = include_reflection
         self.shift = shift
 
-        self.avail_act_vals = xp.linspace(-self.max_stroke/2, self.max_stroke/2, self.Nvals, dtype=xp.float64)
-        self.act_res = self.avail_act_vals[1] - self.avail_act_vals[0]
-        self.use_act_res = False
-
         self.Nsurf = inf_fun.shape[0]
         self.pixelscale = self.act_spacing/(self.inf_sampling*u.pix)
         self.active_diam = self.Nact * self.act_spacing
