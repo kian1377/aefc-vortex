@@ -9,8 +9,12 @@ import copy
 from IPython.display import display, clear_output
 import matplotlib.pyplot as plt
 
-# def take_measurement(system_interface, probe_cube, probe_amplitude, return_all=False, pca_modes=None):
-def take_measurement(sysi, probe_cube, probe_amplitude, pca_modes=None, plot=False):
+def take_measurement(
+        I, 
+        probe_cube, 
+        probe_amplitude, 
+        plot=False,
+    ):
     N_probes = len(probe_cube)
     
     diff_ims = []
@@ -18,35 +22,34 @@ def take_measurement(sysi, probe_cube, probe_amplitude, pca_modes=None, plot=Fal
     for i in range(N_probes):
         probe = probe_cube[i]
 
-        sysi.add_dm(probe_amplitude * probe) # add positive probe
-        im_pos = sysi.snap()
-        sysi.add_dm(-probe_amplitude*probe) # remove positive probe
-        sysi.add_dm(-probe_amplitude * probe) # add negative probe
-        im_neg = sysi.snap()
-        sysi.add_dm(probe_amplitude*probe) # remove negative probe
+        I.add_dm(probe_amplitude * probe) # add positive probe
+        im_pos = I.snap()
+        I.add_dm(-probe_amplitude*probe) # remove positive probe
+        I.add_dm(-probe_amplitude * probe) # add negative probe
+        im_neg = I.snap()
+        I.add_dm(probe_amplitude*probe) # remove negative probe
 
         diff_ims.append((im_pos - im_neg) / (2*probe_amplitude))
 
     diff_ims = xp.array(diff_ims)
-    # if pca_modes is not None:
-    #     differential_images = differential_images - (pca_modes.T.dot( pca_modes.dot(differential_images.T) )).T
-    
+
     if plot:
         for i, diff_im in enumerate(diff_ims):
-            imshow2(probe_cube[i], diff_im.reshape(sysi.npsf, sysi.npsf), 
-                    f'Probe Command {i+1}', 'Difference Image', pxscl2=sysi.psf_pixelscale_lamDc,
+            imshow2(probe_cube[i], diff_im.reshape(I.npsf, I.npsf), 
+                    f'Probe Command {i+1}', 'Difference Image', pxscl2=I.psf_pixelscale_lamDc,
                     cmap1='viridis')
     
     return diff_ims
     
-def calibrate(sysi, 
-              control_mask, 
-              probe_amplitude, probe_modes, 
-              calibration_amplitude, calibration_modes, 
-              scale_factors=None, 
-              return_all=False,
-              plot_responses=False, 
-              ):
+def calibrate(
+        I, 
+        control_mask, 
+        probe_amplitude, probe_modes, 
+        calibration_amplitude, calibration_modes, 
+        scale_factors=None, 
+        return_all=False,
+        plot_responses=False, 
+    ):
     print('Calibrating iEFC...')
     
     Nprobes = probe_modes.shape[0]
@@ -62,7 +65,7 @@ def calibrate(sysi,
     for ci, calibration_mode in enumerate(calibration_modes):
         response = 0
         for s in [-1, 1]: # We need a + and - probe to estimate the jacobian
-            dm_mode = calibration_mode.reshape(sysi.Nact, sysi.Nact)
+            dm_mode = calibration_mode.reshape(I.Nact, I.Nact)
 
             if scale_factors is not None: 
                 calib_amp = calibration_amplitude * scale_factors[ci]
@@ -70,15 +73,15 @@ def calibrate(sysi,
                 calib_amp = calibration_amplitude
 
             # Add the mode to the DMs
-            sysi.add_dm(s * calib_amp * dm_mode)
+            I.add_dm(s * calib_amp * dm_mode)
             
             # Compute reponse with difference images of probes
-            diff_ims = take_measurement(sysi, probe_modes, probe_amplitude)
+            diff_ims = take_measurement(I, probe_modes, probe_amplitude)
             calib_amps.append(calib_amp)
-            response += s * diff_ims.reshape(Nprobes, sysi.npsf**2) / (2 * calib_amp)
+            response += s * diff_ims.reshape(Nprobes, I.npsf**2) / (2 * calib_amp)
             
             # Remove the mode form the DMs
-            sysi.add_dm(-s * calib_amp * dm_mode) # remove the mode
+            I.add_dm(-s * calib_amp * dm_mode) # remove the mode
         
         print(f"\tCalibrated mode {ci+1:d}/{calibration_modes.shape[0]:d} in {time.time()-start:.3f}s", end='')
         print("\r", end="")
@@ -101,7 +104,7 @@ def calibrate(sysi,
     
     if plot_responses:
         dm_response_map = xp.sqrt(xp.mean(xp.square(response_matrix.dot(calibration_modes.reshape(Nmodes, -1))), axis=0))
-        dm_response_map = dm_response_map.reshape(sysi.Nact,sysi.Nact) / xp.max(dm_response_map)
+        dm_response_map = dm_response_map.reshape(I.Nact,I.Nact) / xp.max(dm_response_map)
         imshow1(dm_response_map, 'DM RMS Actuator Responses', lognorm=True, vmin=1e-2)
             
     if return_all:
@@ -109,7 +112,7 @@ def calibrate(sysi,
     else:
         return response_matrix
     
-def run(sysi, 
+def run(I, 
         data,
         control_matrix,
         probe_modes, probe_amplitude, 
@@ -122,7 +125,7 @@ def run(sysi,
         plot_all=False,
         plot_probes=False,
         plot_radial_contrast=False,
-       ):
+    ):
     
     print('Running iEFC...')
     start = time.time()
@@ -131,23 +134,23 @@ def run(sysi,
     Nmodes = calibration_modes.shape[0]
     modal_matrix = calibration_modes.reshape(Nmodes, -1)
 
-    total_command = copy.copy(data['commands'][-1]) if len(data['commands'])>0 else xp.zeros((sysi.Nact,sysi.Nact))
+    total_command = copy.copy(data['commands'][-1]) if len(data['commands'])>0 else xp.zeros((I.Nact,I.Nact))
 
     for i in range(num_iterations):
         print(f"\tClosed-loop iteration {i+starting_itr} / {num_iterations+starting_itr-1}")
-        sysi.subtract_dark = False
-        diff_ims = take_measurement(sysi, probe_modes, probe_amplitude, plot=plot_probes)
+        I.subtract_dark = False
+        diff_ims = take_measurement(I, probe_modes, probe_amplitude, plot=plot_probes)
         measurement_vector = diff_ims[:, control_mask].ravel()
 
         modal_coeff = -control_matrix.dot(measurement_vector)
         # print(modal_matrix.shape, modal_coeff.shape)
 
-        del_command = modal_matrix.T.dot(modal_coeff).reshape(sysi.Nact,sysi.Nact)
+        del_command = modal_matrix.T.dot(modal_coeff).reshape(I.Nact,I.Nact)
         total_command = (1.0-leakage)*total_command + loop_gain*del_command
-        sysi.set_dm(total_command)
+        I.set_dm(total_command)
 
-        sysi.subtract_dark = True
-        image_ni = sysi.snap()
+        I.subtract_dark = True
+        image_ni = I.snap()
         mean_ni = xp.mean(image_ni[control_mask])
 
         data['images'].append(copy.copy(image_ni))
@@ -161,10 +164,10 @@ def run(sysi,
                     'Total DM Command', 
                     f'Image\nMean NI = {mean_ni:.3e}',
                     cmap1='viridis', cmap2='viridis', 
-                    pxscl3=sysi.psf_pixelscale_lamDc, lognorm3=True, vmin3=1e-9)
+                    pxscl3=I.psf_pixelscale_lamDc, lognorm3=True, vmin3=1e-9)
             
             if plot_radial_contrast:
-                utils.plot_radial_contrast(image_ni, control_mask, sysi.psf_pixelscale_lamDc, nbins=50,
+                utils.plot_radial_contrast(image_ni, control_mask, I.psf_pixelscale_lamDc, nbins=50,
 #                                            ylims=[1e-10, 1e-4],
                                           )
     

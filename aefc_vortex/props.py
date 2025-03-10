@@ -115,10 +115,13 @@ def ang_spec(wavefront, wavelength, distance, pixelscale):
 
     return prop_wf
 
-def make_vortex_phase_mask(npix, charge=6, 
-                           grid='odd', 
-                           singularity=None, 
-                           focal_length=500*u.mm, pupil_diam=9.5*u.mm, wavelength=650*u.nm):
+def make_vortex_phase_mask(
+        npix, 
+        charge=6, 
+        grid='odd', 
+        singularity=None, 
+        focal_length=500*u.mm, pupil_diam=9.5*u.mm, wavelength=650*u.nm,
+    ):
     
     if grid=='odd':
         x = xp.linspace(-npix//2, npix//2-1, npix)
