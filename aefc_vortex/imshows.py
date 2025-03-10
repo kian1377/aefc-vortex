@@ -518,6 +518,7 @@ def plot_both_with_reg_conds(
     ax1.semilogy(np.linspace(1, Nitr_aefc-1, Nitr_aefc-1), aefc_reg_conds, '-o', label='aEFC', )
     ax1.set_ylabel('aEFC regularization values', fontsize=14, labelpad=5,)
     ax1.tick_params(axis='y', labelcolor='#1f77b4')
+    ax1.set_ylim([5e-7, 5e-1])
     ax2 = ax1.twinx()
     ax2.plot(np.linspace(1, Nitr_efc-1, Nitr_efc-1), efc_reg_conds, '-o', color='#ff7f0e',)
     ax2.set_ylabel('EFC $\\beta$  values', fontsize=14, rotation=-90, labelpad = 25)

@@ -42,16 +42,12 @@ def run(I,
         
         print('Computing EFC command with L-BFGS')
         current_acts = xp.concatenate([total_dm1[M.dm_mask], total_dm2[M.dm_mask]])
-        E_FP_NOM, E_EP, E_DM2P, DM1_PHASOR, DM2_PHASOR = M.forward(current_acts, I.wavelength, use_vortex=True, return_ints=True,)
+        E_FP_NOM = M.forward(current_acts, I.wavelength, use_vortex=True, return_ints=0,)
 
         rmad_vars = { 
             'current_acts':current_acts,
             'E_ab':E_ab, 
             'E_FP_NOM':E_FP_NOM,
-            'E_EP':E_EP,
-            'E_DM2P':E_DM2P,
-            'DM1_PHASOR':DM1_PHASOR,
-            'DM2_PHASOR':DM2_PHASOR,
             'control_mask':control_mask,
             'wavelength':I.wavelength,
             'r_cond':reg_cond,
@@ -105,21 +101,29 @@ def calc_wfs(I, waves, control_mask, plot=False):
 
     return E_abs
 
-def get_forward_vars(M, current_acts, est_waves):
+# def get_forward_vars(M, current_acts, est_waves):
+#     Nwaves = est_waves.shape[0]
+#     E_FP_NOMs = []
+#     E_EPs = []
+#     E_DM2Ps = []
+#     DM1_PHASORs = []
+#     DM2_PHASORs = []
+#     for i in range(Nwaves):
+#         E_FP_NOM, E_EP, E_DM2P, DM1_PHASOR, DM2_PHASOR = M.forward(current_acts, est_waves[i], use_vortex=True, return_ints=True,)
+#         E_FP_NOMs.append(E_FP_NOM)
+#         E_EPs.append(E_EP)
+#         E_DM2Ps.append(E_DM2P)
+#         DM1_PHASORs.append(DM1_PHASOR)
+#         DM2_PHASORs.append(DM2_PHASOR)
+#     return xp.array(E_FP_NOMs), xp.array(E_EPs), xp.array(E_DM2Ps), xp.array(DM1_PHASORs), xp.array(DM2_PHASORs)
+
+def get_E_NOMs(M, current_acts, est_waves):
     Nwaves = est_waves.shape[0]
     E_FP_NOMs = []
-    E_EPs = []
-    E_DM2Ps = []
-    DM1_PHASORs = []
-    DM2_PHASORs = []
     for i in range(Nwaves):
-        E_FP_NOM, E_EP, E_DM2P, DM1_PHASOR, DM2_PHASOR = M.forward(current_acts, est_waves[i], use_vortex=True, return_ints=True,)
+        E_FP_NOM = M.forward(current_acts, est_waves[i], use_vortex=True, return_ints=0,)
         E_FP_NOMs.append(E_FP_NOM)
-        E_EPs.append(E_EP)
-        E_DM2Ps.append(E_DM2P)
-        DM1_PHASORs.append(DM1_PHASOR)
-        DM2_PHASORs.append(DM2_PHASOR)
-    return xp.array(E_FP_NOMs), xp.array(E_EPs), xp.array(E_DM2Ps), xp.array(DM1_PHASORs), xp.array(DM2_PHASORs)
+    return xp.array(E_FP_NOMs)
 
 def run_bb(
         I, 
@@ -159,15 +163,17 @@ def run_bb(
         
         print('Computing EFC command with L-BFGS')
         current_acts = xp.concatenate([total_dm1[M.dm_mask], total_dm2[M.dm_mask]])
-        E_FP_NOMs, E_EPs, E_DM2Ps, DM1_PHASORs, DM2_PHASORs = get_forward_vars(M, current_acts, control_waves)
+        # E_FP_NOMs, E_EPs, E_DM2Ps, DM1_PHASORs, DM2_PHASORs = get_forward_vars(M, current_acts, control_waves)
+        E_FP_NOMs = get_E_NOMs(M, current_acts, control_waves)
+
         rmad_vars = { 
             'current_acts':current_acts,
             'E_abs':E_abs, 
             'E_FP_NOMs':E_FP_NOMs,
-            'E_EPs':E_EPs,
-            'E_DM2Ps':E_DM2Ps,
-            'DM1_PHASORs':DM1_PHASORs,
-            'DM2_PHASORs':DM2_PHASORs,
+            # 'E_EPs':E_EPs,
+            # 'E_DM2Ps':E_DM2Ps,
+            # 'DM1_PHASORs':DM1_PHASORs,
+            # 'DM2_PHASORs':DM2_PHASORs,
             'control_mask':control_mask,
             'control_waves':control_waves,
             'r_cond':reg_cond,

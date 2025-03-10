@@ -21,7 +21,7 @@ def run(I,
         gain=0.5, 
         leakage=0.0, 
         vmin=1e-9, 
-        ):
+    ):
 
     starting_itr = len(data['images'])
 
@@ -40,13 +40,11 @@ def run(I,
             E_ab = I.calc_wf()
         
         current_acts = total_command[M.dm_mask]
-        E_FP_NOM, E_EP, DM_PHASOR, _, _, _ = M.forward(current_acts, I.wavelength_c, use_vortex=True, return_ints=True)
+        E_FP_NOM = M.forward(current_acts, I.wavelength_c, use_vortex=True, return_ints=False)
         rmad_vars= {
             'E_ab': E_ab,
             'current_acts': current_acts,
-            'E_FP_NOM': E_FP_NOM, 
-            'E_EP': E_EP, 
-            'DM_PHASOR': DM_PHASOR,
+            'E_FP_NOM': E_FP_NOM,
             'control_mask': control_mask,
             'wavelength':I.wavelength_c,
             'r_cond': reg_cond, 

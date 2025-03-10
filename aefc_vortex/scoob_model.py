@@ -247,14 +247,12 @@ def val_and_grad(
     current_acts = rmad_vars['current_acts']
     E_ab = rmad_vars['E_ab']
     E_FP_NOM = rmad_vars['E_FP_NOM']
-    E_EP = rmad_vars['E_EP']
-    DM_PHASOR = rmad_vars['DM_PHASOR']
     control_mask = rmad_vars['control_mask']
     wavelength = rmad_vars['wavelength']
     r_cond = rmad_vars['r_cond']
 
     # Compute E_DM using the forward DM model
-    E_FP_with_delA = M.forward(current_acts + del_acts, wavelength, use_vortex=True) # make sure to do the array indexing
+    E_FP_with_delA, E_EP, DM_PHASOR, _, _, _ = M.forward(current_acts + del_acts, wavelength, use_vortex=True, return_ints=True) # make sure to do the array indexing
     E_delA = E_FP_with_delA - E_FP_NOM
 
     # Compute the cost function
