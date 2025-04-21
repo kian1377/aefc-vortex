@@ -244,6 +244,8 @@ def val_and_grad(
     # Convert array arguments into correct types
     del_acts = xp.array(del_acts)
     del_acts_waves = del_acts/M.wavelength_c
+
+    # Not normalizing by the strongest actuator, but that could be changed to use 
     
     current_acts = rmad_vars['current_acts']
     E_ab = rmad_vars['E_ab']
@@ -255,7 +257,12 @@ def val_and_grad(
     E_ab_l2norm = E_ab[control_mask].dot(E_ab[control_mask].conjugate()).real
 
     # Compute E_dm using the forward DM model
-    E_FP_with_delA, E_EP, E_DM2P, DM1_PHASOR, DM2_PHASOR = M.forward(current_acts + del_acts, wavelength, use_vortex=True, return_ints=True) # make sure to do the array indexing
+    E_FP_with_delA, E_EP, E_DM2P, DM1_PHASOR, DM2_PHASOR = M.forward(
+        current_acts + del_acts, 
+        wavelength, 
+        use_vortex=True, 
+        return_ints=True,
+    )
     E_delA = E_FP_with_delA - E_FP_NOM
 
     # compute the cost function
