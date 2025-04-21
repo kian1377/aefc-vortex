@@ -39,7 +39,6 @@ def pad_or_crop( arr_in, npix ):
         arr_out[x1:x2,x1:x2] = arr_in
     return arr_out
 
-
 def imshow(
         arrs,
         titles=[], 
@@ -599,7 +598,7 @@ def measure_pixelscale(sin_im, cpa,
         cent = np.flip(skimage.measure.centroid(ensure_np_array(mask*arr)))
         cent[0] += i*npsf//2
         centroids.append(cent)
-        
+
     centroids = np.array(centroids)
     if verbose: print('Centroids:\n', centroids)
 
