@@ -168,9 +168,25 @@ class MODEL():
             pupil_wf_lres = utils.pad_or_crop(pupil_wf_lres, self.N)
             if plot: imshow2(xp.abs(pupil_wf_lres), xp.angle(pupil_wf_lres), 'FFT Lyot WF', npix=1.5*self.npix, cmap2='twilight')
 
-            fp_wf_hres = props.mft_forward(E_DM, self.npix, self.N_vortex_hres, self.hres_sampling, convention='-')
+            fp_wf_hres = props.mft_forward(
+                E_DM, 
+                self.npix, 
+                self.N_vortex_hres, 
+                self.hres_sampling, 
+                convention='-',
+                fp_centering='odd',
+                pp_centering='odd',
+            )
             fp_wf_hres *= self.vortex_hres * self.hres_window * self.hres_dot_mask # apply high res FPM, window, and dot mask
-            pupil_wf_hres = props.mft_reverse(fp_wf_hres, self.hres_sampling, self.npix, self.N, convention='+')
+            pupil_wf_hres = props.mft_reverse(
+                fp_wf_hres, 
+                self.hres_sampling, 
+                self.npix, 
+                self.N, 
+                convention='+',
+                fp_centering='odd',
+                pp_centering='odd',
+            )
             if plot: imshow2(xp.abs(pupil_wf_hres), xp.angle(pupil_wf_hres), 'MFT Lyot WF', npix=1.5*self.npix, cmap2='twilight')
 
             E_LP = (pupil_wf_lres + pupil_wf_hres)
@@ -190,9 +206,11 @@ class MODEL():
         if plot: imshow2(xp.abs(E_FP)**2, xp.angle(E_FP), 'At SCICAM WF', lognorm1=True, cmap2='twilight')
 
         if fancy_plot: 
-            fancy_plot_forward(dm_command, E_EP, DM_PHASOR, E_LP, E_FP, 
-                               npix=self.npix, wavelength=wavelength, 
-                               fname=fancy_plot_fname)
+            fancy_plot_forward(
+                dm_command, E_EP, DM_PHASOR, E_LP, E_FP, 
+                npix=self.npix, wavelength=wavelength, 
+                fname=fancy_plot_fname,
+            )
 
         if return_ints:
             return E_FP, E_EP, DM_PHASOR, E_DM, E_LP, E_LS

@@ -201,37 +201,37 @@ class MODEL():
     def setattr(self, attr, val):
         setattr(self, attr, val)
         
-    # def zero_dms(self):
-    #     self.dm1_command = xp.zeros((self.Nact,self.Nact))
-    #     self.dm2_command = xp.zeros((self.Nact,self.Nact))
+    def zero_dms(self):
+        self.dm1_command = xp.zeros((self.Nact,self.Nact))
+        self.dm2_command = xp.zeros((self.Nact,self.Nact))
 
-    # def add_dm1(self, del_dm):
-    #     self.dm1_command += del_dm
+    def add_dm1(self, del_dm):
+        self.dm1_command += del_dm
     
-    # def set_dm1(self, dm_command):
-    #     self.dm1_command = dm_command
+    def set_dm1(self, dm_command):
+        self.dm1_command = dm_command
 
-    # def get_dm1(self,):
-    #     return copy.copy(self.dm1_command)
+    def get_dm1(self,):
+        return copy.copy(self.dm1_command)
 
-    # def add_dm2(self, del_dm):
-    #     self.dm2_command += del_dm
+    def add_dm2(self, del_dm):
+        self.dm2_command += del_dm
     
-    # def set_dm2(self, dm_command):
-    #     self.dm2_command = dm_command
+    def set_dm2(self, dm_command):
+        self.dm2_command = dm_command
 
-    # def get_dm2(self,):
-    #     return copy.copy(self.dm2_command)
+    def get_dm2(self,):
+        return copy.copy(self.dm2_command)
         
-    # def calc_wf(self, wavelength=650e-9):
-    #     actuators = xp.concatenate([self.dm1_command[self.dm_mask], self.dm2_command[self.dm_mask]])
-    #     fpwf = self.forward(actuators, wavelength, use_vortex=self.use_vortex, )
-    #     return fpwf
+    def calc_wf(self, wavelength=650e-9):
+        actuators = xp.concatenate([self.dm1_command[self.dm_mask], self.dm2_command[self.dm_mask]])
+        fpwf = self.forward(actuators, wavelength, use_vortex=self.use_vortex, )
+        return fpwf
         
-    # def snap(self):
-    #     actuators = xp.concatenate([self.dm1_command[self.dm_mask], self.dm2_command[self.dm_mask]])
-    #     im = xp.abs(self.forward(actuators, wavelength, use_vortex=self.use_vortex,))**2
-    #     return im
+    def snap(self):
+        actuators = xp.concatenate([self.dm1_command[self.dm_mask], self.dm2_command[self.dm_mask]])
+        im = xp.abs(self.forward(actuators, self.wavelength, use_vortex=self.use_vortex,))**2
+        return im
 
 def val_and_grad(
         del_acts, 
@@ -348,15 +348,11 @@ def val_and_grad_bb(
     ):
 
     del_acts = xp.array(del_acts)
-    del_acts_waves = del_acts/M.wavelength_c
+    del_acts_waves = del_acts / M.wavelength_c
     
     current_acts = rmad_vars['current_acts']
     E_abs = rmad_vars['E_abs']
     E_FP_NOMs = rmad_vars['E_FP_NOMs']
-    # E_EPs = rmad_vars['E_EPs']
-    # E_DM2Ps = rmad_vars['E_DM2Ps']
-    # DM1_PHASORs = rmad_vars['DM1_PHASORs']
-    # DM2_PHASORs = rmad_vars['DM2_PHASORs']
     control_waves = rmad_vars['control_waves']
     control_mask = rmad_vars['control_mask']
     r_cond = rmad_vars['r_cond']
@@ -368,52 +364,48 @@ def val_and_grad_bb(
     mono_rmad_vars = {
         'current_acts':current_acts,
         'control_mask':control_mask,
-        # 'r_cond':0,
         'r_cond':r_cond,
     }
+    
     for i in range(Nwaves):
         mono_rmad_vars.update({'E_ab':copy.copy(E_abs[i])})
         mono_rmad_vars.update({'E_FP_NOM':copy.copy(E_FP_NOMs[i])})
-        # mono_rmad_vars.update({'E_EP':copy.copy(E_EPs[i])})
-        # mono_rmad_vars.update({'E_DM2P':copy.copy(E_DM2Ps[i])})
-        # mono_rmad_vars.update({'DM1_PHASOR':copy.copy(DM1_PHASORs[i])})
-        # mono_rmad_vars.update({'DM2_PHASOR':copy.copy(DM2_PHASORs[i])})
         mono_rmad_vars.update({'wavelength':copy.copy(control_waves[i])})
 
-        J_mono, dJ_dA_mono = val_and_grad(del_acts, M, mono_rmad_vars, verbose=verbose, plot=plot, fancy_plot=fancy_plot)
+        J_mono, dJ_dA_mono = val_and_grad(
+            del_acts, 
+            M, 
+            mono_rmad_vars, 
+            verbose=verbose, 
+            plot=plot, 
+            fancy_plot=fancy_plot,
+        )
 
         mono_Js[i] = J_mono
         mono_dJ_dAs[i] = dJ_dA_mono
 
-    # if weights is None: 
-    #     J_bb = np.sum(mono_Js)/Nwaves + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
-    #     dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves + ensure_np_array( r_cond * 2*del_acts_waves )
-    # else: 
-    #     J_bb = np.sum(weights * mono_Js) / np.sum(weights) + ensure_np_array( r_cond * del_acts_waves.dot(del_acts_waves) )
-    #     dJ_dA_bb = np.sum(weights[:, None] * mono_dJ_dAs, axis=0) / np.sum(weights) + ensure_np_array( r_cond * 2*del_acts_waves )
-    
     if weights is None: 
         J_bb = np.sum(mono_Js)/Nwaves
         dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)/Nwaves
     else: 
         J_bb = np.sum(weights * mono_Js) / np.sum(weights)
         dJ_dA_bb = np.sum(weights[:, None] * mono_dJ_dAs, axis=0) / np.sum(weights)
-    
-    # # Testing beta regularization
-    # dJ_dA_bb = np.sum(mono_dJ_dAs, axis=0)
-    # alpha2 = dJ_dA_bb.dot(dJ_dA_bb)
-    # E_abs_norm = E_abs[:,control_mask].ravel().dot(E_abs[:,control_mask].ravel().conjugate()).real
-    # J_acts = alpha2 * 10**(r_cond) * ensure_np_array( del_acts.dot(del_acts) )
-    # print(J_E)
-    # print(J_acts)
-    # dJ_dA_bb = dJ_dA_bb + alpha2 * 10**(r_cond) * 2 * ensure_np_array( del_acts ) 
-    
-    # J_bb = (J_E + J_acts)
 
     return J_bb, dJ_dA_bb
 
 
-def fancy_plot_forward(dm1_command, dm2_command, DM1_PHASOR, DM2_PHASOR, E_PUP, E_LP, E_FP, npix, wavelength):
+def fancy_plot_forward(
+        dm1_command, 
+        dm2_command, 
+        DM1_PHASOR, 
+        DM2_PHASOR, 
+        E_PUP, 
+        E_LP, 
+        E_FP, 
+        npix, 
+        wavelength,
+    ):
+
     DM1_SURF = ensure_np_array(wavelength/(4*xp.pi) * utils.pad_or_crop(xp.angle(DM1_PHASOR), 1.5*npix) )
     DM2_SURF = ensure_np_array(wavelength/(4*xp.pi) * utils.pad_or_crop(xp.angle(DM2_PHASOR), 1.5*npix) )
     E_PUP = ensure_np_array(utils.pad_or_crop(E_PUP, 1.5*npix))
@@ -487,7 +479,17 @@ def fancy_plot_forward(dm1_command, dm2_command, DM1_PHASOR, DM2_PHASOR, E_PUP, 
 
     plt.subplots_adjust(hspace=-0.3)
 
-def fancy_plot_adjoint(dJ_dE_DMs, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM1, dJ_dS_DM2, dJ_dA1, dJ_dA2, control_mask, npix=1000):
+def fancy_plot_adjoint(
+        dJ_dE_DMs, 
+        dJ_dE_LP, 
+        dJ_dE_PUP, 
+        dJ_dS_DM1, 
+        dJ_dS_DM2, 
+        dJ_dA1, 
+        dJ_dA2, 
+        control_mask, 
+        npix=1000,
+    ):
 
     control_mask = ensure_np_array(control_mask)
     dJ_dE_DMs = ensure_np_array(dJ_dE_DMs)
