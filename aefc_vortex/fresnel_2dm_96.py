@@ -20,10 +20,6 @@ image = PlaneType.image
 
 from scipy.signal import windows
 
-import os
-data_path = Path(os.path.dirname(__file__))
-print(os.path.dirname(__file__))
-
 class CORO():
 
     def __init__(
