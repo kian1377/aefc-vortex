@@ -38,7 +38,6 @@ class MODEL():
 
         # initialize physical parameters
         self.wavelength_c = 650e-9
-
         self.dm_beam_diam = 47*u.mm
         self.d_dm1_dm2 = 700*u.mm
         # self.d_dm1_dm2 = 0*u.mm
