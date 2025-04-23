@@ -50,7 +50,10 @@ def imshow(
         npix=[],
         cmaps=[],
         norms=[],
+        show_cbars=[],
         cbar_labels=[],
+        cbar_label_rots=[],
+        cbar_label_pads=[],
         grids=[],
         xticks=[],
         yticks=[], 
@@ -72,7 +75,10 @@ def imshow(
     label_fzs.extend([None] * (Nax - len(label_fzs)))
     cmaps.extend(['magma'] * (Nax - len(cmaps)))
     norms.extend([None] * (Nax - len(norms)))
+    show_cbars.extend([True] * (Nax - len(show_cbars)))
     cbar_labels.extend([None] * (Nax - len(cbar_labels)))
+    cbar_label_rots.extend([0] * (Nax - len(cbar_label_rots)))
+    cbar_label_pads.extend([7] * (Nax - len(cbar_label_pads)))
     grids.extend([None] * (Nax - len(grids)))
     xticks.extend([None] * (Nax - len(xticks)))
     yticks.extend([None] * (Nax - len(yticks)))
@@ -105,7 +111,10 @@ def imshow(
         label_fz = label_fzs[i]
         cmap = cmaps[i]
         norm = norms[i]
+        show_cbar = show_cbars[i]
         cbar_label = cbar_labels[i]
+        cbar_label_rot = cbar_label_rots[i]
+        cbar_label_pad = cbar_label_pads[i]
         xtick = xticks[i]
         ytick = yticks[i]
         pxscl = pxscls[i]
@@ -139,10 +148,11 @@ def imshow(
         if patches is not None: 
             for patch in patches:
                 ax.add_patch(patch)
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="4%", pad=0.075)
-        cbar = fig.colorbar(im, cax=cax)
-        cbar.ax.set_ylabel(cbar_label, rotation=0, labelpad=7)
+        if show_cbar:
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="4%", pad=0.075)
+            cbar = fig.colorbar(im, cax=cax)
+            cbar.ax.set_ylabel(cbar_label, rotation=cbar_label_rot, labelpad=cbar_label_pad)
     
     plt.subplots_adjust(wspace=wspace, hspace=hspace)
     plt.close()
@@ -151,6 +161,7 @@ def imshow(
         return fig, axs
     else:
         display(fig)
+
 
 def save_fits(fpath, data, header=None, ow=True, quiet=False):
     data = ensure_np_array(data)
