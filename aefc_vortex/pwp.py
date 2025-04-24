@@ -87,7 +87,7 @@ def run(I,
 
     if plot:
         I_est = ensure_np_array( xp.abs(E_est_2d)**2 )
-        plot_pwp(probes, E_probes, diff_ims, E_est_2d, vmin=np.max(I_est)/1e3, vmax=np.max(I_est), fname=plot_fname)
+        plot_pwp(probes, E_probes, diff_ims, utils.pad_or_crop(E_est_2d, 100), vmin=np.max(I_est)/1e3, vmax=np.max(I_est), fname=plot_fname)
     if plot_est:
         I_est = xp.abs(E_est_2d)**2
         P_est = xp.angle(E_est_2d)

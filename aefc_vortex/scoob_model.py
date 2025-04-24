@@ -15,6 +15,13 @@ import copy
 import poppy
 from scipy.signal import windows
 
+import matplotlib.pyplot as plt
+plt.rcParams['image.origin'] = 'lower'
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.colors import LogNorm, Normalize, CenteredNorm
+from matplotlib.patches import Circle, Rectangle
+from IPython.display import display, clear_output
+
 def acts_to_command(acts, dm_mask):
     Nact = dm_mask.shape[0]
     command = xp.zeros((Nact,Nact))
@@ -208,7 +215,7 @@ class MODEL():
         if fancy_plot: 
             fancy_plot_forward(
                 dm_command, E_EP, DM_PHASOR, E_LP, E_FP, 
-                npix=self.npix, wavelength=wavelength, 
+                self,
                 fname=fancy_plot_fname,
             )
 
@@ -336,7 +343,19 @@ def val_and_grad(
     
     return ensure_np_array(J), ensure_np_array(dJ_dA)
 
-def val_and_grad_bb(del_acts, M, actuators, E_abs, control_mask, waves, r_cond, weights=None, verbose=False, plot=False, fancy_plot=False):
+def val_and_grad_bb(
+        del_acts, 
+        M, 
+        actuators, 
+        E_abs, 
+        control_mask, 
+        waves, 
+        r_cond, 
+        weights=None, 
+        verbose=False, 
+        plot=False, 
+        fancy_plot=False, 
+    ):
     # del_acts, M, actuators, E_ab, control_mask, wavelength, r_cond,
     Nwaves = len(waves)
     E_abs = xp.array(E_abs)
@@ -348,7 +367,18 @@ def val_and_grad_bb(del_acts, M, actuators, E_abs, control_mask, waves, r_cond, 
     for i in range(Nwaves):
         wavelength = waves[i]
         E_ab = E_abs[i]
-        J_mono, dJ_dA_mono = val_and_grad(del_acts, M, actuators, E_ab, control_mask, wavelength, r_cond_mono, verbose=verbose, plot=plot, fancy_plot=fancy_plot)
+        J_mono, dJ_dA_mono = val_and_grad(
+            del_acts, 
+            M, 
+            actuators, 
+            E_ab, 
+            control_mask, 
+            wavelength, 
+            r_cond_mono, 
+            verbose=verbose, 
+            plot=plot, 
+            fancy_plot=fancy_plot,
+        )
         J_monos[i] = J_mono
         dJ_dA_monos[i] = dJ_dA_mono
 
@@ -367,66 +397,138 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from matplotlib.colors import LogNorm
 
-def fancy_plot_forward(command, E_EP, DM_PHASOR, E_LP, fpwf, npix=1000, wavelength=633e-9, fname=None):
-    dm_surf = ensure_np_array(wavelength/(4*xp.pi) * utils.pad_or_crop(xp.angle(DM_PHASOR), 1.5*npix) )
-    E_PUP = ensure_np_array(utils.pad_or_crop(E_EP * DM_PHASOR, 1.5*npix))
-    E_LP = ensure_np_array(utils.pad_or_crop(E_LP, 1.5*npix))
-    fpwf = ensure_np_array(fpwf)
+def make_arr_extent(pxscl, shape):
+    xlim = shape[1]/2 * pxscl
+    ylim = shape[0]/2 * pxscl
+    return [-xlim, xlim, -ylim, ylim]
+
+def fancy_plot_forward(
+        command, 
+        E_EP, 
+        DM_PHASOR, 
+        E_LP, 
+        E_FP, 
+        M,
+        wspace=0.3,
+        hspace=-0.2,
+        fname=None,
+    ):
+    S_DM = ensure_np_array(M.wavelength_c/(2*xp.pi) * utils.pad_or_crop(xp.angle(DM_PHASOR), 1.25*M.npix) )
+    E_PUP = ensure_np_array(utils.pad_or_crop(E_EP * DM_PHASOR, 1.25*M.npix))
+    E_LP = ensure_np_array(utils.pad_or_crop(E_LP, 1.25*M.npix))
+    E_FP = ensure_np_array(E_FP)
+
+    dm_extent = make_arr_extent(M.dm_pxscl*1e3, S_DM.shape)
+    pup_extent = make_arr_extent(M.dm_pxscl*1e3, E_PUP.shape)
+    lyot_extent = make_arr_extent(M.lyot_pxscl*1e3, E_LP.shape)
+    fp_extent = make_arr_extent(M.psf_pixelscale_lamDc, E_FP.shape)
 
     fig = plt.figure(figsize=(20,10), dpi=125)
     gs = GridSpec(2, 5, figure=fig)
 
-    title_fz = 16
+    title_fs = 16
+    label_fs = 14
 
     ax = fig.add_subplot(gs[:, 0])
-    ax.imshow(ensure_np_array(command), cmap='viridis')
-    ax.set_title('DM Command', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    im = ax.imshow(ensure_np_array(command), cmap='viridis', norm=CenteredNorm())
+    ax.set_title('DM Command', fontsize=title_fs)
+    ax.set_xlabel('X [Actuators]', fontsize=label_fs)
+    ax.set_ylabel('Y [Actuators]', fontsize=label_fs)
+    ax.set_xticks(np.arange(0, 35, 5))
+    ax.set_yticks(ax.get_xticks())
+    # ax.set_yticks(np.arange(0, 35, 5))
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="4%", pad=0.075)
+    # cbar = fig.colorbar(im, cax=cax)
+    # cbar.ax.set_ylabel('nm', rotation=0, labelpad=5)
 
+    print(dm_extent)
     ax = fig.add_subplot(gs[:, 1])
-    ax.imshow(dm_surf, cmap='viridis',)
-    ax.set_title('DM Surface', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    im = ax.imshow(S_DM, cmap='viridis', norm=CenteredNorm(), extent=dm_extent)
+    ax.set_title('DM Surface', fontsize=title_fs)
+    ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="4%", pad=0.075)
+    # cbar = fig.colorbar(im, cax=cax)
+    # cbar.ax.set_ylabel('nm', rotation=0, labelpad=5)
 
     ax = fig.add_subplot(gs[0, 2])
-    ax.imshow(np.abs(E_PUP), cmap='plasma')
-    ax.set_title('Total Pupil Amplitude', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    im = ax.imshow(np.abs(E_PUP), cmap='plasma', extent=pup_extent)
+    ax.set_title('Total Pupil Amplitude', fontsize=title_fs)
+    # ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="4%", pad=0.075)
+    # cbar = fig.colorbar(im, cax=cax)
+    # cbar.ax.set_ylabel('', rotation=0, labelpad=5)
 
     ax = fig.add_subplot(gs[1, 2])
-    ax.imshow(np.angle(E_PUP), cmap='twilight')
-    ax.set_title('Total Pupil Phase', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    im = ax.imshow(np.angle(E_PUP), cmap='twilight', extent=pup_extent)
+    ax.set_title('Total Pupil Phase', fontsize=title_fs)
+    ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="4%", pad=0.075)
+    # cbar = fig.colorbar(im, cax=cax)
+    # cbar.ax.set_ylabel('', rotation=0, labelpad=5)
 
     ax = fig.add_subplot(gs[0, 3])
-    ax.imshow(np.abs(E_LP), cmap='plasma')
-    ax.set_title('Lyot Pupil Amplitude', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    im = ax.imshow(np.abs(E_LP), cmap='plasma', extent=lyot_extent)
+    ax.set_title('Lyot Pupil Amplitude', fontsize=title_fs)
+    # ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="4%", pad=0.075)
+    # cbar = fig.colorbar(im, cax=cax)
+    # cbar.ax.set_ylabel('', rotation=0, labelpad=5)
 
     ax = fig.add_subplot(gs[1, 3])
-    ax.imshow(np.angle(E_LP), cmap='twilight')
-    ax.set_title('Lyot Pupil Phase', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    im = ax.imshow(np.angle(E_LP), cmap='twilight',  extent=lyot_extent)
+    ax.set_title('Lyot Pupil Phase', fontsize=title_fs)
+    ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="4%", pad=0.075)
+    # cbar = fig.colorbar(im, cax=cax)
+    # cbar.ax.set_ylabel('', rotation=0, labelpad=5)
 
     ax = fig.add_subplot(gs[0, 4])
-    ax.imshow(np.abs(fpwf)**2, cmap='magma', norm=LogNorm(vmin=1e-7, vmax=1e-3))
-    ax.set_title('Focal Plane Intensity', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    im = ax.imshow(np.abs(E_FP)**2, cmap='magma', norm=LogNorm(vmin=1e-7, vmax=1e-3),  extent=fp_extent)
+    ax.set_title('Focal Plane Intensity', fontsize=title_fs)
+    # ax.set_xlabel('X [$\lambda/D$]', fontsize=label_fs)
+    ax.set_ylabel('Y [$\lambda/D$]', fontsize=label_fs, labelpad=-5)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="4%", pad=0.075)
+    # cbar = fig.colorbar(im, cax=cax)
+    # cbar.ax.set_ylabel('', rotation=0, labelpad=5)
 
     ax = fig.add_subplot(gs[1, 4])
-    ax.imshow(np.angle(fpwf), cmap='twilight')
-    ax.set_title('Focal Plane Phase', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    im = ax.imshow(np.angle(E_FP), cmap='twilight',  extent=fp_extent)
+    ax.set_title('Focal Plane Phase', fontsize=title_fs)
+    ax.set_xlabel('X [$\lambda/D$]', fontsize=label_fs)
+    ax.set_ylabel('Y [$\lambda/D$]', fontsize=label_fs, labelpad=-5)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="4%", pad=0.075)
+    # cbar = fig.colorbar(im, cax=cax)
+    # cbar.ax.set_ylabel('', rotation=0, labelpad=5)
 
-    plt.subplots_adjust(hspace=-0.3)
+    plt.subplots_adjust(
+        wspace=wspace,
+        hspace=hspace,
+    )
     if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
 
 def fancy_plot_adjoint(dJ_dE_delA, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, dm_mask, npix=1000, fname=None):

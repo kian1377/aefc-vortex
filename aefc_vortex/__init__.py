@@ -4,6 +4,6 @@ __version__ = '0.1.0'
 
 import os
 import pathlib
-data_path = pathlib.Path(os.path.dirname(__file__))
+path = pathlib.Path(os.path.dirname(__file__))
 print(os.path.dirname(__file__))
 
