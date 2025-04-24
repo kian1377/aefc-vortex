@@ -339,7 +339,7 @@ def val_and_grad(
     
     dJ_dA = dJ_dA[M.dm_mask].real + xp.array( r_cond * 2*del_acts_waves )
 
-    if fancy_plot: fancy_plot_adjoint(dJ_dE_delA, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, M.dm_mask, fname=fancy_plot_fname)
+    if fancy_plot: fancy_plot_adjoint(dJ_dE_delA, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, M, fname=fancy_plot_fname)
     
     return ensure_np_array(J), ensure_np_array(dJ_dA)
 
@@ -531,71 +531,90 @@ def fancy_plot_forward(
     )
     if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
 
-def fancy_plot_adjoint(dJ_dE_delA, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, dm_mask, npix=1000, fname=None):
+def fancy_plot_adjoint(
+        dJ_dE_delA, 
+        dJ_dE_LP, 
+        dJ_dE_PUP, 
+        dJ_dS_DM, 
+        dJ_dA, 
+        control_mask, 
+        M,
+        wspace=0.3,
+        hspace=0.2,
+        fname=None,
+    ):
 
-    control_mask = ensure_np_array(control_mask)
-    dJ_dE_delA = ensure_np_array(dJ_dE_delA)
-    dJ_dE_LP = ensure_np_array(utils.pad_or_crop(dJ_dE_LP, 1.5*npix))
-    dJ_dE_PUP = ensure_np_array(utils.pad_or_crop(dJ_dE_PUP, 1.5*npix))
-    dJ_dS_DM = ensure_np_array(utils.pad_or_crop(dJ_dS_DM, int(1.5*npix)))
-    dm_grad = ensure_np_array(acts_to_command(dJ_dA, dm_mask))
+    control_mask = ensure_np_array(utils.pad_or_crop(control_mask, 100) )
+    dJ_dE_delA = ensure_np_array(utils.pad_or_crop(dJ_dE_delA, 100))
+    dJ_dE_LP = ensure_np_array(utils.pad_or_crop(dJ_dE_LP, 1.25*M.npix))
+    dJ_dE_PUP = ensure_np_array(utils.pad_or_crop(dJ_dE_PUP, 1.25*M.npix))
+    dJ_dS_DM = ensure_np_array(utils.pad_or_crop(dJ_dS_DM, int(1.25*M.npix)))
+    dm_grad = ensure_np_array(acts_to_command(dJ_dA, M.dm_mask))
 
     fig = plt.figure(figsize=(20,10), dpi=125)
     gs = GridSpec(2, 5, figure=fig)
+    
+    dm_extent = make_arr_extent(M.dm_pxscl*1e3, dJ_dS_DM.shape)
+    pup_extent = make_arr_extent(M.dm_pxscl*1e3, dJ_dE_PUP.shape)
+    lyot_extent = make_arr_extent(M.lyot_pxscl*1e3, dJ_dE_LP.shape)
+    fp_extent = make_arr_extent(M.psf_pixelscale_lamDc, dJ_dE_delA.shape)
 
-    title_fz = 26
+    title_fs = 18
 
     ax = fig.add_subplot(gs[0, 0])
     # ax.imshow(np.abs(dJ_dE_DM)**2, cmap='magma', norm=LogNorm(vmin=1e-6))
-    ax.imshow(np.abs(dJ_dE_delA)**2 * control_mask, cmap='magma', norm=LogNorm(vmin=1e-6))
-    ax.set_title(r'$| \frac{\partial J}{\partial E_{\delta A}} |^2$', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.imshow(np.abs(dJ_dE_delA)**2 * control_mask, cmap='magma', norm=LogNorm(vmin=1e-6), extent=fp_extent)
+    ax.set_title('Intensity of Gradient\nat Focal Plane\n' + r'$| \frac{\partial J}{\partial \delta E} |^2$', fontsize=title_fs)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[1, 0])
     # ax.imshow(np.angle(dJ_dE_DM), cmap='twilight',)
-    ax.imshow(np.angle(dJ_dE_delA) * control_mask, cmap='twilight',)
-    ax.set_title(r'$\angle \frac{\partial J}{\partial E_{\delta A}} $', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.imshow(np.angle(dJ_dE_delA) * control_mask, cmap='twilight', extent=fp_extent)
+    ax.set_title('Phase of Gradient\nat Focal Plane\n'+r'$\angle \frac{\partial J}{\partial \delta E} $', fontsize=title_fs)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[0, 1])
-    ax.imshow(np.abs(dJ_dE_LP), cmap='plasma')
-    ax.set_title(r'$| \frac{\partial J}{\partial E_{LP}} |$', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.imshow(np.abs(dJ_dE_LP), cmap='plasma', extent=lyot_extent)
+    ax.set_title('Amplitude of Gradient\nat Lyot Pupil\n'+r'$| \frac{\partial J}{\partial E_{LP}} |$', fontsize=title_fs)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[1, 1])
-    ax.imshow(np.angle(dJ_dE_LP), cmap='twilight')
-    ax.set_title(r'$\angle \frac{\partial J}{\partial E_{LP}} $', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.imshow(np.angle(dJ_dE_LP), cmap='twilight', extent=lyot_extent)
+    ax.set_title('Phase of Gradient\nat Lyot Pupil\n'+r'$\angle \frac{\partial J}{\partial E_{LP}} $', fontsize=title_fs)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[0, 2])
-    ax.imshow(np.abs(dJ_dE_PUP), cmap='plasma')
-    ax.set_title(r'$| \frac{\partial J}{\partial E_{PUP}} |$', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.imshow(np.abs(dJ_dE_PUP), cmap='plasma', extent=pup_extent)
+    ax.set_title('Amplitude of Gradient\nat Pre-FPM Pupil\n'+r'$| \frac{\partial J}{\partial E_{PUP}} |$', fontsize=title_fs)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[1, 2])
-    ax.imshow(np.angle(dJ_dE_PUP), cmap='twilight')
-    ax.set_title(r'$\angle \frac{\partial J}{\partial E_{PUP}} $', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.imshow(np.angle(dJ_dE_PUP), cmap='twilight', extent=pup_extent)
+    ax.set_title('Phase of Gradient\nat Pre-FPM Pupil\n'r'$\angle \frac{\partial J}{\partial E_{PUP}} $', fontsize=title_fs)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[:, 3])
-    ax.imshow(dJ_dS_DM.real, cmap='viridis')
-    ax.set_title(r'$ \frac{\partial J}{\partial S_{DM}} $', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.imshow(dJ_dS_DM.real, cmap='viridis', extent=pup_extent)
+    ax.set_title('Gradient at\nDM Surface\n'r'$ \frac{\partial J}{\partial S_{DM}} $', fontsize=title_fs)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[:, 4])
-    ax.imshow(dm_grad, cmap='viridis')
-    ax.set_title(r'$ \frac{\partial J}{\partial A} $', fontsize=title_fz)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.imshow(dm_grad, cmap='viridis', extent=dm_extent)
+    ax.set_title('Gradient at\nDM Actuators\n'r'$ \frac{\partial J}{\partial A} $', fontsize=title_fs)
+    # ax.set_xticks([])
+    # ax.set_yticks([])
 
-    plt.subplots_adjust(hspace=-0.2)
+    plt.subplots_adjust(
+        wspace=wspace,
+        hspace=hspace,
+    )
     if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
 
 
