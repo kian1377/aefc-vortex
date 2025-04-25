@@ -36,6 +36,7 @@ class MODEL():
             lyot_stop_diam=8.6*u.mm,
             dm_shift=np.array([0, 0])*u.mm,
             lyot_shift=np.array([0, 0])*u.mm,
+            vortex_sign=1, 
         ):
 
         # initialize physical parameters
@@ -121,14 +122,14 @@ class MODEL():
         self.lres_win_size = int(30/self.lres_sampling)
         w1d = xp.array(windows.tukey(self.lres_win_size, 1, False))
         self.lres_window = utils.pad_or_crop(xp.outer(w1d, w1d), self.N_vortex_lres)
-        self.vortex_lres = props.make_vortex_phase_mask(self.N_vortex_lres)
+        self.vortex_lres = props.make_vortex_phase_mask(self.N_vortex_lres, sign=vortex_sign)
 
         self.hres_sampling = 0.025 # lam/D per pixel; this value is chosen empirically
         self.N_vortex_hres = int(np.round(30/self.hres_sampling))
         self.hres_win_size = int(30/self.hres_sampling)
         w1d = xp.array(windows.tukey(self.hres_win_size, 1, False))
         self.hres_window = utils.pad_or_crop(xp.outer(w1d, w1d), self.N_vortex_hres)
-        self.vortex_hres = props.make_vortex_phase_mask(self.N_vortex_hres)
+        self.vortex_hres = props.make_vortex_phase_mask(self.N_vortex_hres, sign=vortex_sign)
 
         y,x = (xp.indices((self.N_vortex_hres, self.N_vortex_hres)) - self.N_vortex_hres//2)*self.hres_sampling
         r = xp.sqrt(x**2 + y**2)

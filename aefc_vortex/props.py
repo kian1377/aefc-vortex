@@ -117,7 +117,8 @@ def ang_spec(wavefront, wavelength, distance, pixelscale):
 
 def make_vortex_phase_mask(
         npix, 
-        charge=6, 
+        charge=6,
+        sign=1,  
         grid='odd', 
         singularity=None, 
         focal_length=500*u.mm, pupil_diam=9.5*u.mm, wavelength=650*u.nm,
@@ -130,7 +131,7 @@ def make_vortex_phase_mask(
     x,y = xp.meshgrid(x,x)
     th = xp.arctan2(y,x)
 
-    phasor = xp.exp(1j*charge*th)
+    phasor = xp.exp(sign*1j*charge*th)
     
     if singularity is not None:
         r = xp.sqrt((x-1/2)**2 + (y-1/2)**2)
