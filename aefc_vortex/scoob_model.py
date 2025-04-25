@@ -410,7 +410,7 @@ def fancy_plot_forward(
         E_FP, 
         M,
         wspace=0.3,
-        hspace=-0.2,
+        hspace=-0.1,
         fname=None,
     ):
     S_DM = ensure_np_array(M.wavelength_c/(2*xp.pi) * utils.pad_or_crop(xp.angle(DM_PHASOR), 1.25*M.npix) )
@@ -431,7 +431,7 @@ def fancy_plot_forward(
 
     ax = fig.add_subplot(gs[:, 0])
     im = ax.imshow(ensure_np_array(command), cmap='viridis', norm=CenteredNorm())
-    ax.set_title('DM Command', fontsize=title_fs)
+    ax.set_title('DM Command\n'+r'$A$', fontsize=title_fs)
     ax.set_xlabel('X [Actuators]', fontsize=label_fs)
     ax.set_ylabel('Y [Actuators]', fontsize=label_fs)
     ax.set_xticks(np.arange(0, 35, 5))
@@ -445,7 +445,7 @@ def fancy_plot_forward(
     print(dm_extent)
     ax = fig.add_subplot(gs[:, 1])
     im = ax.imshow(S_DM, cmap='viridis', norm=CenteredNorm(), extent=dm_extent)
-    ax.set_title('DM Surface', fontsize=title_fs)
+    ax.set_title('DM Surface\n'+r'$S_{DM}$', fontsize=title_fs)
     ax.set_xlabel('X [mm]', fontsize=label_fs)
     ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # divider = make_axes_locatable(ax)
@@ -455,7 +455,7 @@ def fancy_plot_forward(
 
     ax = fig.add_subplot(gs[0, 2])
     im = ax.imshow(np.abs(E_PUP), cmap='plasma', extent=pup_extent)
-    ax.set_title('Total Pupil Amplitude', fontsize=title_fs)
+    ax.set_title('Total Pupil Amplitude\n'+r'$|E_{PUP}|$', fontsize=title_fs)
     # ax.set_xlabel('X [mm]', fontsize=label_fs)
     ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # ax.set_xticks([])
@@ -467,7 +467,7 @@ def fancy_plot_forward(
 
     ax = fig.add_subplot(gs[1, 2])
     im = ax.imshow(np.angle(E_PUP), cmap='twilight', extent=pup_extent)
-    ax.set_title('Total Pupil Phase', fontsize=title_fs)
+    ax.set_title('Total Pupil Phase\n'+r'$\angle E_{PUP}$', fontsize=title_fs)
     ax.set_xlabel('X [mm]', fontsize=label_fs)
     ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # ax.set_xticks([])
@@ -479,7 +479,7 @@ def fancy_plot_forward(
 
     ax = fig.add_subplot(gs[0, 3])
     im = ax.imshow(np.abs(E_LP), cmap='plasma', extent=lyot_extent)
-    ax.set_title('Lyot Pupil Amplitude', fontsize=title_fs)
+    ax.set_title('Lyot Pupil Amplitude\n'+r'$|E_{LP}|$', fontsize=title_fs)
     # ax.set_xlabel('X [mm]', fontsize=label_fs)
     ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # ax.set_xticks([])
@@ -491,7 +491,7 @@ def fancy_plot_forward(
 
     ax = fig.add_subplot(gs[1, 3])
     im = ax.imshow(np.angle(E_LP), cmap='twilight',  extent=lyot_extent)
-    ax.set_title('Lyot Pupil Phase', fontsize=title_fs)
+    ax.set_title('Lyot Pupil Phase\n'+r'$\angle E_{LP}$', fontsize=title_fs)
     ax.set_xlabel('X [mm]', fontsize=label_fs)
     ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # ax.set_xticks([])
@@ -503,7 +503,7 @@ def fancy_plot_forward(
 
     ax = fig.add_subplot(gs[0, 4])
     im = ax.imshow(np.abs(E_FP)**2, cmap='magma', norm=LogNorm(vmin=1e-7, vmax=1e-3),  extent=fp_extent)
-    ax.set_title('Focal Plane Intensity', fontsize=title_fs)
+    ax.set_title('Focal Plane Intensity\n'+r'$|E_{FP}|^2$', fontsize=title_fs)
     # ax.set_xlabel('X [$\lambda/D$]', fontsize=label_fs)
     ax.set_ylabel('Y [$\lambda/D$]', fontsize=label_fs, labelpad=-5)
     # ax.set_xticks([])
@@ -515,7 +515,7 @@ def fancy_plot_forward(
 
     ax = fig.add_subplot(gs[1, 4])
     im = ax.imshow(np.angle(E_FP), cmap='twilight',  extent=fp_extent)
-    ax.set_title('Focal Plane Phase', fontsize=title_fs)
+    ax.set_title('Focal Plane Phase\n'+r'$\angle E_{FP}$', fontsize=title_fs)
     ax.set_xlabel('X [$\lambda/D$]', fontsize=label_fs)
     ax.set_ylabel('Y [$\lambda/D$]', fontsize=label_fs, labelpad=-5)
     # ax.set_xticks([])
@@ -560,11 +560,14 @@ def fancy_plot_adjoint(
     fp_extent = make_arr_extent(M.psf_pixelscale_lamDc, dJ_dE_delA.shape)
 
     title_fs = 18
+    label_fs = 14
 
     ax = fig.add_subplot(gs[0, 0])
     # ax.imshow(np.abs(dJ_dE_DM)**2, cmap='magma', norm=LogNorm(vmin=1e-6))
     ax.imshow(np.abs(dJ_dE_delA)**2 * control_mask, cmap='magma', norm=LogNorm(vmin=1e-6), extent=fp_extent)
     ax.set_title('Intensity of Gradient\nat Focal Plane\n' + r'$| \frac{\partial J}{\partial \delta E} |^2$', fontsize=title_fs)
+    # ax.set_xlabel('X [$\lambda/D$]', fontsize=label_fs)
+    ax.set_ylabel('Y [$\lambda/D$]', fontsize=label_fs, labelpad=-5)
     # ax.set_xticks([])
     # ax.set_yticks([])
 
@@ -572,42 +575,56 @@ def fancy_plot_adjoint(
     # ax.imshow(np.angle(dJ_dE_DM), cmap='twilight',)
     ax.imshow(np.angle(dJ_dE_delA) * control_mask, cmap='twilight', extent=fp_extent)
     ax.set_title('Phase of Gradient\nat Focal Plane\n'+r'$\angle \frac{\partial J}{\partial \delta E} $', fontsize=title_fs)
+    ax.set_xlabel('X [$\lambda/D$]', fontsize=label_fs)
+    ax.set_ylabel('Y [$\lambda/D$]', fontsize=label_fs, labelpad=-5)
     # ax.set_xticks([])
     # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[0, 1])
     ax.imshow(np.abs(dJ_dE_LP), cmap='plasma', extent=lyot_extent)
     ax.set_title('Amplitude of Gradient\nat Lyot Pupil\n'+r'$| \frac{\partial J}{\partial E_{LP}} |$', fontsize=title_fs)
+    # ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # ax.set_xticks([])
     # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[1, 1])
     ax.imshow(np.angle(dJ_dE_LP), cmap='twilight', extent=lyot_extent)
     ax.set_title('Phase of Gradient\nat Lyot Pupil\n'+r'$\angle \frac{\partial J}{\partial E_{LP}} $', fontsize=title_fs)
+    ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # ax.set_xticks([])
     # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[0, 2])
     ax.imshow(np.abs(dJ_dE_PUP), cmap='plasma', extent=pup_extent)
     ax.set_title('Amplitude of Gradient\nat Pre-FPM Pupil\n'+r'$| \frac{\partial J}{\partial E_{PUP}} |$', fontsize=title_fs)
+    # ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # ax.set_xticks([])
     # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[1, 2])
     ax.imshow(np.angle(dJ_dE_PUP), cmap='twilight', extent=pup_extent)
     ax.set_title('Phase of Gradient\nat Pre-FPM Pupil\n'r'$\angle \frac{\partial J}{\partial E_{PUP}} $', fontsize=title_fs)
+    ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # ax.set_xticks([])
     # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[:, 3])
     ax.imshow(dJ_dS_DM.real, cmap='viridis', extent=pup_extent)
     ax.set_title('Gradient at\nDM Surface\n'r'$ \frac{\partial J}{\partial S_{DM}} $', fontsize=title_fs)
+    ax.set_xlabel('X [mm]', fontsize=label_fs)
+    ax.set_ylabel('Y [mm]', fontsize=label_fs, labelpad=0)
     # ax.set_xticks([])
     # ax.set_yticks([])
 
     ax = fig.add_subplot(gs[:, 4])
-    ax.imshow(dm_grad, cmap='viridis', extent=dm_extent)
+    ax.imshow(dm_grad, cmap='viridis',)
     ax.set_title('Gradient at\nDM Actuators\n'r'$ \frac{\partial J}{\partial A} $', fontsize=title_fs)
+    ax.set_xlabel('X [Actuators]', fontsize=label_fs)
+    ax.set_ylabel('Y [Actuators]', fontsize=label_fs, labelpad=7.5)
     # ax.set_xticks([])
     # ax.set_yticks([])
 
