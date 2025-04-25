@@ -262,12 +262,12 @@ def val_and_grad(
         use_vortex=True, 
         return_ints=True,
     )
-    E_delA = E_FP_with_delA - E_FP_NOM
+    deltaE = E_FP_with_delA - E_FP_NOM
 
     # compute the cost function
-    delE = E_ab + E_delA
-    delE_vec = delE[control_mask] # make sure to do array indexing
-    J_delE = delE_vec.dot(delE_vec.conjugate()).real
+    E_predicted = E_ab + deltaE # take the measured E-field and add the model-based deltaE from new actuator command
+    E_predicted_vec = E_predicted[control_mask] # make sure to do array indexing
+    J_delE = E_predicted_vec.dot(E_predicted_vec.conjugate()).real
     J_c = r_cond * del_acts_waves.dot(del_acts_waves)
     J = (J_delE + J_c) / E_ab_l2norm
     if verbose: 
@@ -277,11 +277,11 @@ def val_and_grad(
         print(f'\tTotal cost-function value: {J:.3f}\n')
 
     # Compute the gradient with the adjoint model
-    delE_masked = control_mask * delE # still a 2D array
-    dJ_dE_delA = 2 * delE_masked / E_ab_l2norm
+    E_predicted_masked = control_mask * E_predicted # still a 2D array
+    dJ_ddeltaE = 2 * E_predicted_masked / E_ab_l2norm
 
     psf_pixelscale_lamD = M.psf_pixelscale_lamDc * M.wavelength_c/wavelength
-    dJ_dE_LS = props.mft_reverse(dJ_dE_delA, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
+    dJ_dE_LS = props.mft_reverse(dJ_ddeltaE, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
     if plot: imshow2(xp.abs(dJ_dE_LS), xp.angle(dJ_dE_LS), 'RMAD Lyot Stop', npix=1.5*M.npix)
 
     dJ_dE_LP = dJ_dE_LS * utils.pad_or_crop(M.LYOT, M.N)
@@ -340,7 +340,7 @@ def val_and_grad(
     dJ_dA = xp.concatenate([dJ_dA1[M.dm_mask].real, dJ_dA2[M.dm_mask].real]) + xp.array( r_cond * 2*del_acts_waves )
 
     if fancy_plot: 
-        fancy_plot_adjoint(dJ_dE_delA, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM1, dJ_dS_DM2, dJ_dA1, dJ_dA2, control_mask)
+        fancy_plot_adjoint(dJ_ddeltaE, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM1, dJ_dS_DM2, dJ_dA1, dJ_dA2, control_mask)
 
     return ensure_np_array(J), ensure_np_array(dJ_dA)
 

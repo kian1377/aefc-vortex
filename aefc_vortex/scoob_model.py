@@ -272,20 +272,26 @@ def val_and_grad(
     current_acts = rmad_vars['current_acts']
     E_ab = rmad_vars['E_ab']
     E_FP_NOM = rmad_vars['E_FP_NOM']
-    control_mask = rmad_vars['control_mask']
     wavelength = rmad_vars['wavelength']
+    control_mask = rmad_vars['control_mask']
     r_cond = rmad_vars['r_cond']
 
-    # Compute E_DM using the forward DM model
-    E_FP_with_delA, E_EP, DM_PHASOR, _, _, _ = M.forward(current_acts + del_acts, wavelength, use_vortex=True, return_ints=True) # make sure to do the array indexing
-    E_delA = E_FP_with_delA - E_FP_NOM
-
-    # Compute the cost function
-    delE = E_ab + E_delA
-    delE_vec = delE[control_mask] # make sure to do array indexing
-    J_delE = delE_vec.dot(delE_vec.conjugate()).real
-    J_c = r_cond * del_acts_waves.dot(del_acts_waves)
     E_ab_l2norm = E_ab[control_mask].dot(E_ab[control_mask].conjugate()).real
+
+    # Compute E_DM using the forward DM model
+    E_FP_with_delA, E_EP, DM_PHASOR, _, _, _ = M.forward(
+        current_acts + del_acts, 
+        wavelength, 
+        use_vortex=True, 
+        return_ints=True,
+    )
+    deltaE = E_FP_with_delA - E_FP_NOM
+
+    # compute the cost function
+    E_predicted = E_ab + deltaE # take the measured E-field and add the model-based deltaE from new actuator command
+    E_predicted_vec = E_predicted[control_mask] # make sure to do array indexing
+    J_delE = E_predicted_vec.dot(E_predicted_vec.conjugate()).real
+    J_c = r_cond * del_acts_waves.dot(del_acts_waves)
     J = (J_delE + J_c) / E_ab_l2norm
     if verbose: 
         print(f'\tCost-function J_delE: {J_delE:.3f}')
@@ -294,13 +300,16 @@ def val_and_grad(
         print(f'\tTotal cost-function value: {J:.3f}\n')
 
     # Compute the gradient with the adjoint model
-    delE_masked = control_mask * delE # still a 2D array
-    delE_masked = xcipy.ndimage.rotate(delE_masked, -M.det_rotation, reshape=False, order=5)
-    dJ_dE_delA = 2 * delE_masked / E_ab_l2norm
-    if plot: imshow2(xp.abs(dJ_dE_delA)**2, xp.angle(dJ_dE_delA), 'RMAD DM E-Field', lognorm1=True, vmin1=xp.max(xp.abs(dJ_dE_DM)**2)/1e3, cmap2='twilight')
+    # delE_masked = control_mask * delE # still a 2D array
+    # delE_masked = xcipy.ndimage.rotate(delE_masked, -M.det_rotation, reshape=False, order=5)
+    # dJ_dE_delA = 2 * delE_masked / E_ab_l2norm
+    E_predicted_masked = control_mask * E_predicted # still a 2D array
+    E_predicted_masked = xcipy.ndimage.rotate(E_predicted_masked, -M.det_rotation, reshape=False, order=5)
+    dJ_ddeltaE = 2 * E_predicted_masked / E_ab_l2norm
+    if plot: imshow2(xp.abs(dJ_ddeltaE)**2, xp.angle(dJ_ddeltaE), 'RMAD DM E-Field', lognorm1=True, vmin1=xp.max(xp.abs(dJ_dE_DM)**2)/1e3, cmap2='twilight')
 
     psf_pixelscale_lamD = M.psf_pixelscale_lamDc * M.wavelength_c/wavelength
-    dJ_dE_LS = props.mft_reverse(dJ_dE_delA, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
+    dJ_dE_LS = props.mft_reverse(dJ_ddeltaE, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
     if plot: imshow2(xp.abs(dJ_dE_LS), xp.angle(dJ_dE_LS), 'RMAD Lyot Stop', npix=1.5*M.npix, cmap2='twilight')
 
     dJ_dE_LP = dJ_dE_LS * utils.pad_or_crop(M.LYOT, M.N)
@@ -339,7 +348,7 @@ def val_and_grad(
     
     dJ_dA = dJ_dA[M.dm_mask].real + xp.array( r_cond * 2*del_acts_waves )
 
-    if fancy_plot: fancy_plot_adjoint(dJ_dE_delA, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, M, fname=fancy_plot_fname)
+    if fancy_plot: fancy_plot_adjoint(dJ_ddeltaE, dJ_dE_LP, dJ_dE_PUP, dJ_dS_DM, dJ_dA, control_mask, M, fname=fancy_plot_fname)
     
     return ensure_np_array(J), ensure_np_array(dJ_dA)
 
