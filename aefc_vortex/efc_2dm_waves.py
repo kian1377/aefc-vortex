@@ -8,7 +8,7 @@ from scipy.optimize import minimize
 import time
 import copy
 
-def compute_jacobian(M, control_mask, amp=1e-9, current_acts=None, wavelength=None):
+def compute_jacobian(M, control_mask, amp=1/650, current_acts=None, wavelength=None):
     if current_acts is None:
         current_acts = xp.zeros(M.Nacts)
     if wavelength is None:
@@ -31,7 +31,7 @@ def compute_jacobian(M, control_mask, amp=1e-9, current_acts=None, wavelength=No
 
     return jac
 
-def compute_jacobian_bb(M, control_mask, waves, amp=1e-9, current_acts=None,):
+def compute_jacobian_bb(M, control_mask, waves, amp=1/650, current_acts=None,):
 
     Nwaves = waves.shape[0]
     Nmask = int(control_mask.sum())
@@ -43,49 +43,15 @@ def compute_jacobian_bb(M, control_mask, waves, amp=1e-9, current_acts=None,):
 
     return jac
 
-def compute_jacobian_waves(M, control_mask, amp_waves=1/650, current_acts=None, wavelength=None):
-    if current_acts is None:
-        current_acts = xp.zeros(M.Nacts)
-    if wavelength is None:
-        wavelength = M.wavelength_c
-
-    Nmask = int(control_mask.sum())
-    jac = xp.zeros((2*Nmask, M.Nacts))
-    print(jac.shape)
-    start = time.time()
-    for i in range(M.Nacts):
-        del_acts = xp.zeros(M.Nacts)
-        del_acts[i] = amp_waves
-        E_pos = M.forward(current_acts + del_acts, wavelength, use_vortex=1, )
-        E_neg = M.forward(current_acts - del_acts, wavelength, use_vortex=1, )
-        response = ( E_pos - E_neg ) / (2*amp_waves)
-        jac[::2, i] = response.real[control_mask]
-        jac[1::2, i] = response.imag[control_mask]
-        print(f"\tCalibrated mode {i+1:d}/{M.Nacts:d} in {time.time()-start:.3f}s", end='')
-        print("\r", end="")
-
-    return jac
-
-def compute_jacobian_bb_waves(M, control_mask, waves, amp_waves=1/650, current_acts=None,):
-
-    Nwaves = waves.shape[0]
-    Nmask = int(control_mask.sum())
-    jac = xp.zeros((Nwaves * 2*Nmask, M.Nacts))
-    print(jac.shape)
-    for i in range(Nwaves):
-        mono_jac = compute_jacobian(M, control_mask, amp_waves, current_acts, waves[i])
-        jac[i*2*Nmask:(i+1)*2*Nmask] = mono_jac
-
-    return jac
-
 def run(I, 
         control_matrix,
+        reg_cond,
         control_mask,
         data,
         pwp_params=None,
         Nitr=3, 
         gain=0.5, 
-        ):
+    ):
     
     starting_itr = len(data['images'])
     if len(data['dm1_commands'])>0:
@@ -110,7 +76,8 @@ def run(I,
 
         E_ab_vec[::2] = E_ab[control_mask].real
         E_ab_vec[1::2] = E_ab[control_mask].imag
-        del_acts = - gain * control_matrix.dot(E_ab_vec)
+        del_acts_waves = - gain * control_matrix.dot(E_ab_vec)
+        del_acts = del_acts_waves * I.wavelength_c
         del_dm1[I.dm_mask] = del_acts[:Nacts//2]
         del_dm2[I.dm_mask] = del_acts[Nacts//2:]
         total_dm1 += del_dm1
@@ -127,6 +94,7 @@ def run(I,
         data['del_dm1_commands'].append(copy.copy(del_dm1))
         data['dm2_commands'].append(copy.copy(total_dm2))
         data['del_dm2_commands'].append(copy.copy(del_dm2))
+        data['reg_conds'].append(copy.copy(reg_cond))
         print(i)
         imshow3(del_dm1, del_dm2, image_ni, 
                 f'$\delta$DM1', f'$\delta$DM2', 
@@ -183,7 +151,8 @@ def run_bb(
             E_ab_vec[j*2*Nmask:(j+1)*2*Nmask][::2] = E_abs[j][control_mask].real
             E_ab_vec[j*2*Nmask:(j+1)*2*Nmask][1::2] = E_abs[j][control_mask].imag
 
-        del_acts = - gain * control_matrix.dot(E_ab_vec)
+        del_acts_waves = - gain * control_matrix.dot(E_ab_vec)
+        del_acts = del_acts_waves * I.wavelength_c
         del_dm1[I.dm_mask] = del_acts[:Nacts//2]
         del_dm2[I.dm_mask] = del_acts[Nacts//2:]
         total_dm1 += del_dm1

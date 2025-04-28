@@ -407,14 +407,19 @@ def create_hadamard_modes(dm_mask):
     
     return had_modes
     
-def create_fourier_modes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, 
-                         edge=None,
-                         rotation=0, 
-                         fourier_sampling=0.75, 
-                         which='both', 
-                         return_fs=False,
-                         plot=False,
-                         ):
+def create_fourier_modes(
+        dm_mask, 
+        npsf, 
+        psf_pixelscale_lamD, 
+        iwa, 
+        owa, 
+        edge=None,
+        rotation=0, 
+        fourier_sampling=0.75, 
+        which='both', 
+        return_fs=False,
+        plot=False,
+    ):
     Nact = dm_mask.shape[0]
     nfg = int(xp.round(npsf * psf_pixelscale_lamD/fourier_sampling))
     if nfg%2==1: nfg += 1
@@ -440,14 +445,15 @@ def create_fourier_modes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa,
     else:
         return xp.array(fourier_modes)
 
-def create_fourier_probes(dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, 
-                          edge=None, 
-                          rotation=0, 
-                          fourier_sampling=0.75, 
-                          shifts=None, nprobes=2,
-                          use_weighting=False, 
-                          plot=False,
-                          ): 
+def create_fourier_probes(
+        dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, 
+        edge=None, 
+        rotation=0, 
+        fourier_sampling=0.75, 
+        shifts=None, nprobes=2,
+        use_weighting=False, 
+        plot=False,
+    ): 
     Nact = dm_mask.shape[0]
     cos_modes, fs = create_fourier_modes(
         dm_mask, npsf, psf_pixelscale_lamD, iwa, owa, rotation,
@@ -523,6 +529,19 @@ def beta_reg(J, beta=-1):
 
     control_matrix = xp.matmul( xp.linalg.inv( JTJ + alpha2*10.0**(beta) * xp.eye(JTJ.shape[0]) ), J.T)
     return control_matrix
+
+# def TikhonovInverse(A, rcond=1e-15):
+#     U, s, Vt = xp.linalg.svd(A, full_matrices=False)
+#     # s_inv = s/(s**2 + (rcond * s.max())**2)
+#     s_inv = s/(s**2 + (rcond)**2)
+#     return (Vt.T * s_inv).dot(U.T)
+
+def TikhonovInverse(A, rcond=1e-15):
+    U, s, Vt = np.linalg.svd(ensure_np_array(A), full_matrices=False)
+    # s_inv = s/(s**2 + (rcond * s.max())**2)
+    s_inv = s/(s**2 + (rcond)**2)
+    control_matrix = (Vt.T * s_inv).dot(U.T)
+    return xp.array(control_matrix)
 
 def measure_center_and_angle(waffle_im, psf_pixelscale_lamD, im_thresh=1e-4, r_thresh=12,
                            verbose=True, 
