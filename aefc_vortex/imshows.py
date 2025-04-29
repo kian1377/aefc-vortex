@@ -313,7 +313,7 @@ def plot_howfsc_data(
 
     w = 0.225
     im1 = ax[0].imshow(ref_im, norm=LogNorm(vmax=im1vmax, vmin=im1vmin), cmap='magma', extent=extent)
-    ax[0].set_title(f'Initial Image:\nMean Contrast = {mean_nis[0]:.2e}', fontsize=14)
+    ax[0].set_title(f'Initial Image:\nMean NI = {mean_nis[0]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[0])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im1, cax=cax)
@@ -321,7 +321,7 @@ def plot_howfsc_data(
     ax[0].set_position([0, 0, w, w]) # [left, bottom, width, height]
 
     im2 = ax[1].imshow( best_im, norm=LogNorm(vmax=im2vmax, vmin=im2vmin), cmap='magma', extent=extent)
-    ax[1].set_title('Best Iteration' + exp_name + f':\nMean Contrast = {mean_nis[ibest]:.2e}', fontsize=14)
+    ax[1].set_title('Best Iteration' + exp_name + f':\nMean NI = {mean_nis[ibest]:.2e}', fontsize=14)
     divider = make_axes_locatable(ax[1])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im2, cax=cax,)
@@ -332,11 +332,11 @@ def plot_howfsc_data(
     ax[0].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
     ax[1].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
 
-    ax[2].set_title('Mean Contrast per Iteration' + exp_name, fontsize=14)
-    ax[2].semilogy(mean_nis, label='3.6% Bandpass')
+    ax[2].set_title('Mean NI per Iteration' + exp_name, fontsize=14)
+    ax[2].semilogy(mean_nis)
     ax[2].grid()
     ax[2].set_xlabel('Iteration Number', fontsize=12, )
-    ax[2].set_ylabel('Mean Contrast', fontsize=14, labelpad=1)
+    ax[2].set_ylabel('Mean NI', fontsize=14, labelpad=1)
     ax[2].set_ylim([vmin, vmax])
     xticks = np.arange(0,Nitr,2) if xticks is None else xticks
     ax[2].set_xticks(xticks)
