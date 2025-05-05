@@ -344,6 +344,60 @@ def plot_howfsc_data(
 
     if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
 
+def plot_howfsc_data_without_ref(
+        data, 
+        imvmin=1e-9, 
+        imvmax=1e-4, 
+        vmin=1e-9, 
+        vmax=1e-4, 
+        xticks=None,
+        wspace=0.25,
+        hspace=0.25,
+        exp_name='',
+        fname=None,
+    ):
+    ims = ensure_np_array( xp.array(data['images']) ) 
+    control_mask = ensure_np_array( data['control_mask'] )
+    # print(type(control_mask))
+    Nitr = ims.shape[0]
+    npsf = ims.shape[1]
+    psf_pixelscale_lamD = data['pixelscale']
+
+    mean_nis = np.mean(ims[:,control_mask], axis=1)
+    ibest = np.argmin(mean_nis)
+    best_im = ensure_np_array(data['images'][ibest])
+
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(15,5), dpi=125, gridspec_kw={'width_ratios': [1, 1.5], })
+    ext = psf_pixelscale_lamD*npsf/2
+    extent = [-ext, ext, -ext, ext]
+
+    ax = axs[0]
+    im = ax.imshow( best_im, norm=LogNorm(vmax=imvmax, vmin=imvmin), cmap='magma', extent=extent)
+    ax.set_title('Best Iteration from\naEFC SCoOB simulation:\nMean NI = {mean_nis[ibest]:.2e}', fontsize=14)
+    ax.set_ylabel('Y [$\lambda/D$]', fontsize=12, labelpad=-5)
+    ax.set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes("right", size="4%", pad=0.075)
+    cbar = fig.colorbar(im, cax=cax,)
+    cbar.ax.set_ylabel('NI', rotation=0, labelpad=7)
+
+    ax = axs[1]
+    ax.semilogy(mean_nis)
+    ax.set_title('Mean NI per Iteration' + exp_name, fontsize=14)
+    ax.grid()
+    ax.set_xlabel('Iteration Number', fontsize=12, )
+    ax.set_ylabel('Mean NI', fontsize=14, labelpad=1)
+    ax.set_ylim([vmin, vmax])
+    xticks = np.arange(0,Nitr,2) if xticks is None else xticks
+    ax.set_xticks(xticks)
+
+    plt.subplots_adjust(
+        wspace=wspace,
+        hspace=hspace,
+    )
+
+    if fname is not None: fig.savefig(fname, format='pdf', bbox_inches="tight")
+
 def get_radial_dist(shape, scaleyx=(1.0, 1.0), cenyx=None):
     '''
     Compute the radial separation of each pixel
