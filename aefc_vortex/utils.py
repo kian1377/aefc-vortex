@@ -46,6 +46,8 @@ def imshow(
         ylabels=[],
         title_fzs=[],
         label_fzs=[],
+        xlabel_pads=[],
+        ylabel_pads=[],
         pxscls=[],
         npix=[],
         cmaps=[],
@@ -73,6 +75,8 @@ def imshow(
     ylabels.extend([None] * (Nax - len(ylabels)))
     title_fzs.extend([None] * (Nax - len(title_fzs)))
     label_fzs.extend([None] * (Nax - len(label_fzs)))
+    xlabel_pads.extend([None] * (Nax - len(xlabel_pads)))
+    ylabel_pads.extend([None] * (Nax - len(ylabel_pads)))
     cmaps.extend(['magma'] * (Nax - len(cmaps)))
     norms.extend([None] * (Nax - len(norms)))
     show_cbars.extend([True] * (Nax - len(show_cbars)))
@@ -109,6 +113,8 @@ def imshow(
         ylabel = ylabels[i]
         title_fz = title_fzs[i]
         label_fz = label_fzs[i]
+        xlabel_pad = xlabel_pads[i]
+        ylabel_pad = ylabel_pads[i]
         cmap = cmaps[i]
         norm = norms[i]
         show_cbar = show_cbars[i]
@@ -140,8 +146,8 @@ def imshow(
 
         im = ax.imshow(ensure_np_array(arr), cmap=cmap, norm=norm, extent=extent)
         ax.set_title(title, fontsize=title_fz)
-        ax.set_xlabel(xlabel, fontsize=label_fz)
-        ax.set_ylabel(ylabel, fontsize=label_fz)
+        ax.set_xlabel(xlabel, fontsize=label_fz, labelpad=xlabel_pad)
+        ax.set_ylabel(ylabel, fontsize=label_fz, labelpad=ylabel_pad)
         if xtick is not None: ax.set_xticks(xtick)
         if ytick is not None: ax.set_yticks(ytick)
         if grid is not None: ax.grid()
